@@ -24,6 +24,7 @@ import com.example.cs501_fp.ui.pages.calendar.CalendarScreen
 import com.example.cs501_fp.ui.pages.home.HomeScreen
 
 import com.example.cs501_fp.ui.components.BottomNavBar
+import com.example.cs501_fp.ui.components.ShowDetailScreen
 import com.example.cs501_fp.ui.pages.profile.ProfileScreen
 import com.example.cs501_fp.ui.pages.tickets.TicketScreen
 import com.example.cs501_fp.viewmodel.HomeViewModel
@@ -89,9 +90,9 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             composable("tickets")  { TicketScreen() }
             composable("profile")  { ProfileScreen() }
 
-            composable("detail/{showId") { backStack ->
+            composable("detail/{showId}") { backStack ->
                 val id = backStack.arguments?.getString("showId") ?: ""
-                Text("Detail information for $id")
+                ShowDetailScreen(showId = id)
             }
         }
     }
