@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cs501_fp.viewmodel.HomeViewModel
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -38,13 +41,19 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    showsThisWeek: List<ShowSummary> = demoShows,
-    dailyPick: ShowSummary = demoShows.first(),
+    viewModel: HomeViewModel,
     onListenClick: (ShowSummary) -> Unit = {},
     onShowClick: (ShowSummary) -> Unit = {},
     onPrevWeek: () -> Unit = {},
     onNextWeek: () -> Unit = {}
 ) {
+    val dailyPick = viewModel.dailyPick.collectAsState().value
+    val shows = viewModel.showsThisWeek.collectAsState().value
+
+    LaunchedEffect(Unit) {
+        viewModel.loadData()
+    }
+
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("MusicNY") }) }
     ) { inner ->
@@ -56,7 +65,9 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Daily Pick
-            dailyPick?.let { DailyPickBanner(it, onListenClick) }
+            dailyPick?.let { pick ->
+                DailyPickBanner(pick, onListenClick)
+            }
 
             // Section header + arrows
             SectionHeader(
@@ -67,7 +78,7 @@ fun HomeScreen(
 
             // Shows list
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                showsThisWeek.forEach { show ->
+                shows.forEach { show ->
                     ShowCard(show = show, onClick = { onShowClick(show) })
                 }
             }
@@ -162,17 +173,3 @@ private val demoShows = listOf(
     ShowSummary("2", "Wicked", "Gershwin Theatre", LocalDate.now().plusDays(2), 85),
     ShowSummary("3", "The Lion King", "Minskoff Theatre", LocalDate.now().plusDays(3), 79)
 )
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF)
-@Composable
-private fun HomePreview() {
-    MaterialTheme {
-        HomeScreen(
-            showsThisWeek = demoShows,
-            dailyPick = demoShows.first(),
-            onListenClick = {},
-            onShowClick = {}
-        )
-    }
-}

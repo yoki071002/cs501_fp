@@ -2,6 +2,7 @@ package com.example.cs501_fp.ui.navigation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.content.MediaType.Companion.Text
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 //import androidx.compose.material.icons.filled.CalendarToday
@@ -9,9 +10,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,6 +26,12 @@ import com.example.cs501_fp.ui.pages.home.HomeScreen
 import com.example.cs501_fp.ui.components.BottomNavBar
 import com.example.cs501_fp.ui.pages.profile.ProfileScreen
 import com.example.cs501_fp.ui.pages.tickets.TicketScreen
+import com.example.cs501_fp.viewmodel.HomeViewModel
+
+private val filled: Any
+    get() {
+        TODO()
+    }
 
 data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -60,10 +69,30 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
             startDestination = "home",
             modifier = Modifier.padding(inner)
         ) {
-            composable("home")     { HomeScreen() }
+            composable("home")     {
+                val homeVM: HomeViewModel = viewModel()
+                HomeScreen(
+                    viewModel = homeVM,
+                    onShowClick = { show ->
+                        navController.navigate("detail/${show.id}")
+                    },
+                    onListenClick = { pick ->
+                        val mediaPlayer = android.media.MediaPlayer().apply {
+                            setDataSource(pick.id)
+                            prepare()
+                            start()
+                        }
+                    }
+                )
+            }
             composable("calendar") { CalendarScreen() }
             composable("tickets")  { TicketScreen() }
             composable("profile")  { ProfileScreen() }
+
+            composable("detail/{showId") { backStack ->
+                val id = backStack.arguments?.getString("showId") ?: ""
+                Text("Detail information for $id")
+            }
         }
     }
 }
