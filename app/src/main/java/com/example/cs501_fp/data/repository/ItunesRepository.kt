@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class ItunesRepository {
     private val retrofit = Retrofit.Builder()
-        .baseUrl("https://itunes.apple.com/") // ✅ iTunes API base URL
+        .baseUrl("https://itunes.apple.com/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 

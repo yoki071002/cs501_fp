@@ -1,4 +1,4 @@
-package com.example.cs501_fp.ui.theme
+package com.example.musicalcalendar.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

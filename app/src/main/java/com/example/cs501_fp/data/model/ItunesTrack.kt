@@ -5,6 +5,7 @@ data class ItunesResponse(
 )
 
 data class ItunesTrack(
+    val trackId: Long? = null,
     val trackName: String? = null,
     val artistName: String? = null,
     val previewUrl: String? = null,
