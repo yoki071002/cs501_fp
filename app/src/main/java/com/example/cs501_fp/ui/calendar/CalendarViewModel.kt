@@ -5,55 +5,73 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cs501_fp.data.local.EventDao
 import com.example.cs501_fp.data.model.UserEvent
-import kotlinx.coroutines.flow.*
+import com.example.cs501_fp.data.repository.EventManager
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 
-fun parseDateToMillis(date: String, time: String): Long {
-    return try {
-        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        val combined = "$date $time"
-        val parsedDate = formatter.parse(combined)
-        parsedDate?.time ?: System.currentTimeMillis()
-    } catch (e: Exception) {
-        e.printStackTrace()
-        System.currentTimeMillis() // 出错时返回当前时间
-    }
-}
-class CalendarViewModel(private val dao: EventDao) : ViewModel() {
+/**
+ * CalendarViewModel
+ * -------------------------------------------------
+ * Handles all calendar-related operations.
+ * Connects UI (Compose) with repository (EventManager).
+ */
+class CalendarViewModel(
+    private val dao: EventDao,
+    private val userId: String  // ✅ 当前登录用户 UID
+) : ViewModel() {
 
-    private val _events = MutableStateFlow<List<UserEvent>>(emptyList())
-    val events: StateFlow<List<UserEvent>> = _events.asStateFlow()
+    private val manager = EventManager(dao)
 
-    init {
+    /**
+     * ✅ 添加事件（含提醒与云同步）
+     */
+    fun addEvent(event: UserEvent, context: Context) {
         viewModelScope.launch {
-            dao.getAllEvents().collect { _events.value = it }
+            manager.addEventWithReminder(
+                event.copy(userId = userId),  // 🔹 确保事件包含当前用户ID
+                context
+            )
         }
     }
 
-    fun addEvent(event: UserEvent) {
-        viewModelScope.launch {
-            dao.insertEvent(event)
-        }
-    }
-
+    /**
+     * ✅ 更新事件
+     */
     fun updateEvent(event: UserEvent) {
-        viewModelScope.launch { dao.updateEvent(event) }
-    }
-
-    fun deleteEvent(event: UserEvent) {
-        viewModelScope.launch { dao.deleteEvent(event) }
-    }
-
-    fun addEventWithReminder(event: UserEvent, context: Context) {
         viewModelScope.launch {
-            dao.insertEvent(event)
-            // 设置提醒
-            val reminderManager = EventReminderManager(context)
-            val triggerTime = parseDateToMillis(event.date, event.time)
-            reminderManager.scheduleEventReminder(event.id, event.name, triggerTime)
+            manager.updateEvent(event.copy(userId = userId))
         }
     }
 
+    /**
+     * ✅ 删除事件
+     */
+    fun deleteEvent(event: UserEvent) {
+        viewModelScope.launch {
+            manager.deleteEvent(event)
+        }
+    }
+
+    /**
+     * ✅ 获取所有事件（本地 Flow）
+     */
+    fun getAllEvents(): Flow<List<UserEvent>> {
+        return manager.getAllEventsForUser(userId)
+    }
+
+    /**
+     * ✅ 按日期获取事件（本地 Flow）
+     */
+    fun getEventsByDate(date: String): Flow<List<UserEvent>> {
+        return manager.getEventsByDateForUser(userId, date)
+    }
+
+    /**
+     * ✅ 从云端同步到本地
+     */
+    fun syncFromCloud() {
+        viewModelScope.launch {
+            manager.syncFromCloud(userId)
+        }
+    }
 }
