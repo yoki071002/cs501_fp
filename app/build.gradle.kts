@@ -1,7 +1,13 @@
+configurations.all {
+    exclude(group = "com.google.guava", module = "listenablefuture")
+}
+
+
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -40,6 +46,14 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.adapters)
+    implementation(libs.androidx.compiler)
+    // ✅ Room dependencies (Kotlin DSL 写法)
+    val room_version = "2.8.3"
+
+    implementation(libs.androidx.room.runtime)
+    kapt(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
