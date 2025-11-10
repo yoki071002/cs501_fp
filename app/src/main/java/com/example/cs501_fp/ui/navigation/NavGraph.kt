@@ -4,7 +4,9 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Theaters
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -31,12 +33,14 @@ data class NavItem(val label: String, val icon: ImageVector, val route: String)
 fun NavGraph(navController: NavHostController = rememberNavController()) {
     val items = listOf(
         NavItem("Home", Icons.Filled.Home, "home"),
-        NavItem("My Calendar", Icons.Filled.Home, "calendar"),   // TEMP use Home
-        NavItem("Tickets", Icons.Filled.Person, "tickets"),     // TEMP use Person
+        NavItem("My Calendar", Icons.Filled.DateRange, "calendar"),
+        NavItem("Tickets", Icons.Filled.Theaters, "tickets"),
         NavItem("Profile", Icons.Filled.Person, "profile")
     )
 
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
+    val homeVM: HomeViewModel = viewModel()
 
     Scaffold(
         bottomBar = {
@@ -62,15 +66,10 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
         ) {
 
             composable("home")     {
-                val homeVM: HomeViewModel = viewModel()
                 HomeScreen(
                     viewModel = homeVM,
                     onShowClick = { show ->
                         navController.navigate("detail/${show.id}")
-                    },
-                    onListenClick = { pick ->
-                        val context = navController.context
-                        homeVM.playPreview(context, pick.id)
                     }
                 )
             }

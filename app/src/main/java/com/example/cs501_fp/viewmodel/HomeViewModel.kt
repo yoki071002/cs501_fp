@@ -1,21 +1,22 @@
 package com.example.cs501_fp.viewmodel
 
-import android.os.Build
-import android.media.MediaPlayer
 import android.content.Context
+import android.media.MediaPlayer
+import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cs501_fp.data.repository.TicketmasterRepository
 import com.example.cs501_fp.data.repository.ItunesRepository
+import com.example.cs501_fp.data.repository.TicketmasterRepository
 import com.example.cs501_fp.ui.pages.home.ShowSummary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
-import java.time.ZoneId
 import java.time.LocalDate
+import java.time.ZoneId
 
+@RequiresApi(Build.VERSION_CODES.O)
 class HomeViewModel : ViewModel() {
     private val ticketRepo = TicketmasterRepository()
     private val itunesRepo = ItunesRepository()
@@ -24,8 +25,32 @@ class HomeViewModel : ViewModel() {
     private val _dailyPick = MutableStateFlow<ShowSummary?>(null)
     val dailyPick: StateFlow<ShowSummary?> = _dailyPick
 
-    private val _showsThisWeek = MutableStateFlow<List<ShowSummary>>(emptyList())
-    val showsThisWeek: StateFlow<List<ShowSummary>> = _showsThisWeek
+    private val _showsThisWeek = MutableStateFlow<Map<LocalDate, List<ShowSummary>>>(emptyMap())
+    val showsThisWeek: StateFlow<Map<LocalDate, List<ShowSummary>>> = _showsThisWeek
+
+    private val startOfCurrentActualWeek: LocalDate = LocalDate.now().with(DayOfWeek.MONDAY)
+
+    private val _isPrevWeekEnabled = MutableStateFlow(false)
+    val isPrevWeekEnabled: StateFlow<Boolean> = _isPrevWeekEnabled
+
+    private val _currentWeekStart = MutableStateFlow(startOfCurrentActualWeek)
+    val currentWeekStart: StateFlow<LocalDate> = _currentWeekStart
+
+    init {
+        loadData()
+    }
+
+    fun nextWeek() {
+        _currentWeekStart.value = _currentWeekStart.value.plusWeeks(1)
+        loadShowsThisWeek()
+    }
+
+    fun prevWeek() {
+        if (_isPrevWeekEnabled.value) {
+            _currentWeekStart.value = _currentWeekStart.value.minusWeeks(1)
+            loadShowsThisWeek()
+        }
+    }
 
     fun playPreview(context: Context, id: String) {
         val url = _dailyPick.value?.id ?: return
@@ -47,30 +72,15 @@ class HomeViewModel : ViewModel() {
         mediaPlayer = null
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    private val _currentWeekStart = MutableStateFlow(LocalDate.now())
-    @RequiresApi(Build.VERSION_CODES.O)
-    val currentWeekStart: StateFlow<LocalDate> = _currentWeekStart
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun nextWeek() {
-        _currentWeekStart.value = _currentWeekStart.value.plusWeeks(1)
-        loadShowsThisWeek()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun prevWeek() {
-        _currentWeekStart.value = _currentWeekStart.value.minusWeeks(1)
-        loadShowsThisWeek()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
     fun loadData() {
         loadDailyPick()
         loadShowsThisWeek()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
+    private fun updatePrevWeekButtonState() {
+        _isPrevWeekEnabled.value = _currentWeekStart.value.isAfter(startOfCurrentActualWeek)
+    }
+
     private fun loadDailyPick() {
         viewModelScope.launch {
             val response = itunesRepo.getMusicalSongs("broadway musical")
@@ -92,9 +102,10 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun loadShowsThisWeek() {
         viewModelScope.launch {
+            updatePrevWeekButtonState()
+
             val startOfWeekDate = _currentWeekStart.value.with(DayOfWeek.MONDAY)
             val endOfWeekDate = startOfWeekDate.plusDays(6)
 
@@ -103,16 +114,23 @@ class HomeViewModel : ViewModel() {
 
             val events = ticketRepo.getEvents(startOfWeekWithTime, endOfWeekWithTime)
 
-            _showsThisWeek.value = events.map { event ->
-                ShowSummary(
-                    id = event.id ?: "",
-                    title = event.name ?: "Untitled",
-                    venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
-                    dateTime = LocalDate.parse(event.dates?.start?.localDate),
-                    priceFrom = 100,
-                    imageUrl = event.images?.firstOrNull()?.url
-                )
-            }
+            _showsThisWeek.value = events
+                .mapNotNull { event ->
+                    val dateStr = event.dates?.start?.localDate
+                    if (dateStr != null) {
+                        ShowSummary(
+                            id = event.id ?: "",
+                            title = event.name ?: "Untitled",
+                            venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
+                            dateTime = LocalDate.parse(dateStr),
+                            priceFrom = 100,
+                            imageUrl = event.images?.firstOrNull()?.url
+                        )
+                    } else {
+                        null
+                    }
+                }
+                .groupBy { it.dateTime }
         }
     }
 }

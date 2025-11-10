@@ -1,61 +1,52 @@
-//TopAppBar：标题“MusicNY”、搜索按钮
-//
-//Daily Pick Banner：专辑图 + 歌名 + “Listen” 按钮
-//
-//本周演出（Shows This Week）：左右切换周
-//
-//演出列表：卡片（海报 | 名称 | 时间 | 剧院 | 价格 | “Book”/“Wishlist”）
-
-
 package com.example.cs501_fp.ui.pages.home
-
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import com.example.cs501_fp.viewmodel.HomeViewModel
-
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 /** Simple model for a show item on Home */
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onListenClick: (ShowSummary) -> Unit = {},
     onShowClick: (ShowSummary) -> Unit = {},
-    onPrevWeek: () -> Unit = {},
-    onNextWeek: () -> Unit = {}
 ) {
-    val dailyPick = viewModel.dailyPick.collectAsState().value
-    val shows = viewModel.showsThisWeek.collectAsState().value
+    val dailyPick by viewModel.dailyPick.collectAsState()
+    val showsByDay by viewModel.showsThisWeek.collectAsState()
+    val isPrevWeekEnabled by viewModel.isPrevWeekEnabled.collectAsState()
+
+    val sortedDays = showsByDay.keys.sorted()
 
     LaunchedEffect(Unit) {
-        if (dailyPick == null && shows.isEmpty()) {
-            viewModel.loadData()
-        }
+        viewModel.loadData()
     }
 
     Scaffold(
@@ -65,8 +56,9 @@ fun HomeScreen(
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
                 val context = LocalContext.current
@@ -83,28 +75,86 @@ fun HomeScreen(
             item {
                 SectionHeader(
                     title = "Shows This Week",
+                    isPrevEnabled = isPrevWeekEnabled,
                     onPrev = { viewModel.prevWeek() },
                     onNext = { viewModel.nextWeek() }
                 )
             }
 
-            items(shows) { show ->
-                ShowCard(show = show, onClick = { onShowClick(show) })
+            if (showsByDay.isEmpty()) {
+                item {
+                    Text(
+                        "No shows found for this week.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            } else {
+                sortedDays.forEach { date ->
+                    val showsOnDate = showsByDay[date] ?: emptyList()
+                    item {
+                        DailyShowsItem(
+                            date = date,
+                            shows = showsOnDate,
+                            onShowClick = onShowClick
+                        )
+                    }
+                }
             }
-
-            item { Spacer(Modifier.height(8.dp)) }
         }
     }
 }
 
 /* ----------------------------- Components ----------------------------- */
 
+@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun DailyShowsItem(
+    date: LocalDate,
+    shows: List<ShowSummary>,
+    onShowClick: (ShowSummary) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Column {
+        Card(
+            onClick = { isExpanded = !isExpanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Expand or collapse"
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = isExpanded) {
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+                shows.forEach { show ->
+                    ShowCard(show = show, onClick = { onShowClick(show) })
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun DailyPickBanner(
     pick: ShowSummary,
     onListenClick: (ShowSummary) -> Unit
 ) {
-    // Gradient background; swap to an Image if you prefer
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -131,13 +181,13 @@ private fun DailyPickBanner(
 }
 
 @Composable
-private fun SectionHeader(title: String, onPrev: () -> Unit, onNext: () -> Unit) {
+private fun SectionHeader(title: String, isPrevEnabled: Boolean, onPrev: () -> Unit, onNext: () -> Unit) {
     Row(
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = onPrev) { Text("‹") }
+        TextButton(onClick = onPrev, enabled = isPrevEnabled) { Text("‹") } // 使用 enabled 属性
         TextButton(onClick = onNext) { Text("›") }
     }
 }
@@ -153,7 +203,6 @@ private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
         shape = RoundedCornerShape(14.dp)
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            // Left thumbnail (placeholder block if no image lib)
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -165,21 +214,10 @@ private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
                 Text(show.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(show.venue, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
-                    show.dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "  •  From \$${show.priceFrom}",
+                    show.dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            Spacer(Modifier.width(8.dp))
-            AssistChip(onClick = onClick, label = { Text("Book") })
         }
     }
 }
-
-/* ----------------------------- Preview ----------------------------- */
-
-@RequiresApi(Build.VERSION_CODES.O)
-private val demoShows = listOf(
-    ShowSummary("1", "Hamilton", "Richard Rodgers Theatre", LocalDate.now().plusDays(1), 89),
-    ShowSummary("2", "Wicked", "Gershwin Theatre", LocalDate.now().plusDays(2), 85),
-    ShowSummary("3", "The Lion King", "Minskoff Theatre", LocalDate.now().plusDays(3), 79)
-)
