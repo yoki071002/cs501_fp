@@ -12,6 +12,8 @@ import com.example.cs501_fp.ui.pages.home.ShowSummary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.ZoneId
 import java.time.LocalDate
 
 class HomeViewModel : ViewModel() {
@@ -93,23 +95,23 @@ class HomeViewModel : ViewModel() {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun loadShowsThisWeek() {
         viewModelScope.launch {
-            val events = ticketRepo.getEvents()
-            val startOfWeek = _currentWeekStart.value
-            val endOfWeek = startOfWeek.plusDays(6)
+            val startOfWeekDate = _currentWeekStart.value.with(DayOfWeek.MONDAY)
+            val endOfWeekDate = startOfWeekDate.plusDays(6)
 
-            _showsThisWeek.value = events.mapNotNull {
-                val dateStr = it.dates?.start?.localDate ?: return@mapNotNull null
-                val date = LocalDate.parse(dateStr)
-                if (date in startOfWeek..endOfWeek) {
-                    ShowSummary(
-                        id = it.id ?: "",
-                        title = it.name ?: "Untitled",
-                        venue = it._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
-                        dateTime = LocalDate.parse(it.dates?.start?.localDate ?: LocalDate.now().toString()),
-                        priceFrom = 100,
-                        imageUrl = it.images?.firstOrNull()?.url
-                    )
-                } else null
+            val startOfWeekWithTime = startOfWeekDate.atStartOfDay().atZone(ZoneId.systemDefault())
+            val endOfWeekWithTime = endOfWeekDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault())
+
+            val events = ticketRepo.getEvents(startOfWeekWithTime, endOfWeekWithTime)
+
+            _showsThisWeek.value = events.map { event ->
+                ShowSummary(
+                    id = event.id ?: "",
+                    title = event.name ?: "Untitled",
+                    venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
+                    dateTime = LocalDate.parse(event.dates?.start?.localDate),
+                    priceFrom = 100,
+                    imageUrl = event.images?.firstOrNull()?.url
+                )
             }
         }
     }
