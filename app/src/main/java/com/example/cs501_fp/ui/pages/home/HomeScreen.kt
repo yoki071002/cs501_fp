@@ -27,9 +27,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import com.example.cs501_fp.viewmodel.HomeViewModel
 
 import java.time.LocalDate
@@ -51,38 +53,46 @@ fun HomeScreen(
     val shows = viewModel.showsThisWeek.collectAsState().value
 
     LaunchedEffect(Unit) {
-        viewModel.loadData()
+        if (dailyPick == null && shows.isEmpty()) {
+            viewModel.loadData()
+        }
     }
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("MusicNY") }) }
     ) { inner ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Daily Pick
-            dailyPick?.let { pick ->
-                DailyPickBanner(pick, onListenClick)
-            }
-
-            // Section header + arrows
-            SectionHeader(
-                title = "Shows This Week",
-                onPrev = onPrevWeek,
-                onNext = onNextWeek
-            )
-
-            // Shows list
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                shows.forEach { show ->
-                    ShowCard(show = show, onClick = { onShowClick(show) })
+            item {
+                val context = LocalContext.current
+                dailyPick?.let { pick ->
+                    DailyPickBanner(
+                        pick = pick,
+                        onListenClick = {
+                            viewModel.playPreview(context, pick.id)
+                        }
+                    )
                 }
             }
-            Spacer(Modifier.height(8.dp))
+
+            item {
+                SectionHeader(
+                    title = "Shows This Week",
+                    onPrev = { viewModel.prevWeek() },
+                    onNext = { viewModel.nextWeek() }
+                )
+            }
+
+            items(shows) { show ->
+                ShowCard(show = show, onClick = { onShowClick(show) })
+            }
+
+            item { Spacer(Modifier.height(8.dp)) }
         }
     }
 }

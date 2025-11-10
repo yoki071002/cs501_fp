@@ -3,8 +3,11 @@ package com.example.cs501_fp.ui.components
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +22,7 @@ import com.example.cs501_fp.viewmodel.ShowDetailViewModel
 @Composable
 fun ShowDetailScreen(
     showId: String,
+    onBack: () -> Unit,
     viewModel: ShowDetailViewModel = viewModel()
 ) {
     val show by viewModel.showDetail.collectAsState()
@@ -35,19 +39,40 @@ fun ShowDetailScreen(
         }
     } else {
         val s = show!!
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(text = s.name ?: "untitled Show", style = MaterialTheme.typography.headlineMedium)
-            Text(text = s._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre")
-            Text(
-                text = "Date: ${s.dates?.start?.localDate ?: "TBD"}  •  Time: ${s.dates?.start?.localTime ?: "TBD"}"
-            )
-            Text(text = "URL: ${s.url ?: "N/A"}")
-            Spacer(Modifier.height(20.dp))
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text(s.name ?: "Show Detail") },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                )
+            }
+        ) { inner ->
+            Column(
+                modifier = Modifier
+                    .padding(inner)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = s.name ?: "Untitled Show",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(text = s._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre")
+                Text(
+                    text = "Date: ${s.dates?.start?.localDate ?: "TBD"}  •  Time: ${s.dates?.start?.localTime ?: "TBD"}"
+                )
+                Text(text = "URL: ${s.url ?: "N/A"}")
+                Spacer(Modifier.height(20.dp))
+            }
         }
     }
 }
