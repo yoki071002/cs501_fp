@@ -31,7 +31,7 @@ The app offers two core experiences:
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/<your-team>/cs501_fp.git
+   git clone https://github.com/yoki071002/cs501_fp
    cd cs501_fp
 3. Open the project in Android Studio.  
 4. Let Gradle sync automatically (or trigger manually with `Sync Project with Gradle Files`).  
