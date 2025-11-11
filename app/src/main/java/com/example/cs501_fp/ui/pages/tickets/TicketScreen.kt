@@ -34,17 +34,6 @@ fun TicketScreen() {
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("My Tickets") }) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { /* TODO */ }, text = { Text("Create Ticket") },
-                icon = TODO(),
-                modifier = TODO(),
-                expanded = TODO(),
-                shape = TODO(),
-                containerColor = TODO(),
-                contentColor = TODO(),
-                elevation = TODO(),
-                interactionSource = TODO()
-            )
         }
     ) { inner ->
         Column(
