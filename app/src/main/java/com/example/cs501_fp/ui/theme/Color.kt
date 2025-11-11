@@ -1,4 +1,4 @@
-package com.example.cs501_fp.ui.theme
+package com.example.musicalcalendar.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
