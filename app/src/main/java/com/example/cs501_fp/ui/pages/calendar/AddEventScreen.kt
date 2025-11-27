@@ -126,7 +126,7 @@ fun AddEventScreen(
             OutlinedTextField(
                 value = seat,
                 onValueChange = { seat = it },
-                label = { Text("Seat (e.g. Mezz C • Row D • 8)") },
+                label = { Text("Seat") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
