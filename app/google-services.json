@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "175584063982",
+    "project_id": "cs501-fp-musical-f22dd",
+    "storage_bucket": "cs501-fp-musical-f22dd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:175584063982:android:3b7998bbdf8dc12522deff",
+        "android_client_info": {
+          "package_name": "com.example.cs501_fp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBV3rTUHCtHw3X44kbWMJFIaY530Y85viQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
