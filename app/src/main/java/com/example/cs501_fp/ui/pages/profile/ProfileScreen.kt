@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -23,6 +24,7 @@ fun ProfileScreen(navController: NavHostController) {
     val currentUser = auth.currentUser
     val email = currentUser?.email ?: "Guest"
     val userName = if (currentUser != null) email.substringBefore("@") else "Guest User"
+    val context = LocalContext.current
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("Profile") }) }
@@ -68,7 +70,12 @@ fun ProfileScreen(navController: NavHostController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Notifications")
-                        Switch(checked = notify, onCheckedChange = { notify = it })
+                        Switch(checked = notify,
+                            onCheckedChange = {
+                                notify = it
+                                android.widget.Toast.makeText(context, "Notifications updated", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        )
                     }
 
                     Row(
@@ -77,7 +84,13 @@ fun ProfileScreen(navController: NavHostController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Dark Mode")
-                        Switch(checked = darkMode, onCheckedChange = { darkMode = it })
+                        Switch(
+                            checked = darkMode,
+                            onCheckedChange = {
+                                darkMode = it
+                                android.widget.Toast.makeText(context, "Dark mode setting saved", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        )
                     }
                 }
             }

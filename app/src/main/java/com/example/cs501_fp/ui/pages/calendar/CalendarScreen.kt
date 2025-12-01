@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ fun CalendarScreen(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val events by viewModel.events.collectAsState(initial = emptyList())
 
     val today = LocalDate.now()
@@ -90,11 +92,10 @@ fun CalendarScreen(
                         .map { it.first }
 
                     when (eventsToday.size) {
-                        0 -> {} // no event
+                        0 -> {android.widget.Toast.makeText(context, "No events on ${dateClicked}", android.widget.Toast.LENGTH_SHORT).show() }
                         1 -> navController.navigate("event_detail/${eventsToday[0].id}")
                         else -> {
-                            // ★★ 修复：正确 route
-                            navController.navigate("events_on_day/${dateClicked.toString()}")
+                            navController.navigate("events_on_day/${dateClicked}")
                         }
                     }
                 }
