@@ -12,6 +12,7 @@ data class TicketmasterEvent(
     val id: String? = null,
     val name: String? = null,
     val url: String? = null,
+    val info: String? = null,
     val images: List<TicketmasterImage>? = null,
     val dates: TicketmasterDates? = null,
     val _embedded: EmbeddedVenue? = null

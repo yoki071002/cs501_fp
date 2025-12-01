@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -29,6 +30,7 @@ import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.ShowDetailViewModel
 import java.util.UUID
+import kotlin.math.abs
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,10 +42,16 @@ fun ShowDetailScreen(
     calendarViewModel: CalendarViewModel = viewModel()
 ) {
     val show by viewModel.showDetail.collectAsState()
+    val existingEvents by calendarViewModel.events.collectAsState(initial = emptyList())
+
     val context = LocalContext.current
 
     var isAdded by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) }
+
+    var showInputDialog by remember { mutableStateOf(false) }
+
+    var showConflictDialog by remember { mutableStateOf(false) }
+    var pendingEvent by remember { mutableStateOf<UserEvent?>(null) } // 暂存
 
     var inputPrice by remember { mutableStateOf("") }
     var inputSeat by remember { mutableStateOf("") }
@@ -52,9 +60,53 @@ fun ShowDetailScreen(
         viewModel.loadShowDetail(showId)
     }
 
-    if (showDialog) {
+    fun saveEventToWallet(event: UserEvent) {
+        calendarViewModel.addEvent(event)
+        isAdded = true
+        Toast.makeText(context, "Ticket added to Wallet!", Toast.LENGTH_SHORT).show()
+        pendingEvent = null
+        showConflictDialog = false
+        showInputDialog = false
+    }
+
+    fun parseTime(t: String): Int {
+        return try {
+            if (t.contains(":")) {
+                val parts = t.split(":")
+                var h = parts[0].trim().toInt()
+                val m = parts[1].take(2).toInt()
+                if (t.uppercase().contains("PM") && h != 12) h += 12
+                if (t.uppercase().contains("AM") && h == 12) h = 0
+                h * 60 + m
+            } else 0
+        } catch (e: Exception) { 0 }
+    }
+
+    if (showConflictDialog && pendingEvent != null) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showConflictDialog = false },
+            title = { Text("Time Conflict Warning") },
+            text = {
+                Text("You already have another event scheduled around this time on ${pendingEvent?.dateText}. Do you want to add this one anyway?")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    pendingEvent?.let { saveEventToWallet(it) }
+                }) {
+                    Text("Yes, Add It")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showConflictDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showInputDialog) {
+        AlertDialog(
+            onDismissRequest = { showInputDialog = false },
             title = { Text("Add to Wallet") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -95,18 +147,31 @@ fun ShowDetailScreen(
                                 imageUri = null
                             )
 
-                            calendarViewModel.addEvent(newEvent)
-                            isAdded = true
-                            Toast.makeText(context, "Ticket added to Wallet!", Toast.LENGTH_SHORT).show()
+                            val newTimeMin = parseTime(newEvent.timeText)
+                            val hasConflict = existingEvents.any { event ->
+                                if (event.dateText == newEvent.dateText) {
+                                    val existingTimeMin = parseTime(event.timeText)
+                                    abs(newTimeMin - existingTimeMin) < 180 // 间隔小于3小时
+                                } else {
+                                    false
+                                }
+                            }
+
+                            if (hasConflict) {
+                                pendingEvent = newEvent
+                                showInputDialog = false
+                                showConflictDialog = true
+                            } else {
+                                saveEventToWallet(newEvent)
+                            }
                         }
-                        showDialog = false
                     }
                 ) {
                     Text("Save Ticket")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) {
+                TextButton(onClick = { showInputDialog = false }) {
                     Text("Cancel")
                 }
             }
@@ -140,7 +205,7 @@ fun ShowDetailScreen(
                 ExtendedFloatingActionButton(
                     onClick = {
                         if (!isAdded) {
-                            showDialog = true
+                            showInputDialog = true
                         }
                     },
                     containerColor = if (isAdded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
@@ -192,6 +257,12 @@ fun ShowDetailScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
+                }
+
+                if(!s.info.isNullOrBlank()) {
+                    Text("About", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(s.info, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(8.dp))
                 }
 
                 Card(Modifier.fillMaxWidth()) {
