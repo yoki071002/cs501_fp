@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import android.Manifest
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
@@ -20,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -50,9 +53,9 @@ fun TicketScreen(
     val totalSpent by viewModel.totalSpent.collectAsState(initial = 0.0)
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("Ticket Wallent") }) }
+        topBar = { CenterAlignedTopAppBar(title = { Text("Ticket Wallet") }) }
     ) {
-        inner ->
+            inner ->
         LazyColumn(
             modifier = Modifier
                 .padding(inner)
@@ -113,9 +116,44 @@ fun SpendingSummaryCard(total: Double) {
 private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewModel()) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showImageSourceDialog by remember { mutableStateOf(false) }
 
     var noteText by remember { mutableStateOf(event.notes) }
     var isEditingNote by remember { mutableStateOf(false) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val uriStr = saveBitmapToInternalStorage(context, bitmap, event.id)
+            if (uriStr != null) {
+                val updatedEvent = event.copy(imageUri = uriStr as String?)
+                viewModel.updateEvent(updatedEvent)
+            }
+        }
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val uriStr = saveUriToInternalStorage(context, uri, event.id)
+            if (uriStr != null) {
+                val updatedEvent = event.copy(imageUri = uriStr)
+                viewModel.updateEvent(updatedEvent)
+            }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        } else {
+            Toast.makeText(context, "Camera permission required", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -142,26 +180,43 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
         )
     }
 
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap ->
-        if (bitmap != null) {
-            val uriStr = saveBitmapToInternalStorage(context, bitmap, event.id)
-            if (uriStr != null) {
-                val updatedEvent = event.copy(imageUri = uriStr as String?)
-                viewModel.updateEvent(updatedEvent)
-            }
-        }
-    }
+    if (showImageSourceDialog) {
+        AlertDialog(
+            onDismissRequest = { showImageSourceDialog = false },
+            title = { Text("Add Ticket Stub") },
+            text = { Text("Choose an image source:") },
+            confirmButton = { },
+            dismissButton = {
+                Column(Modifier.padding(horizontal = 8.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        OutlinedButton(onClick = {
+                            showImageSourceDialog = false
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }) {
+                            Icon(Icons.Default.PhotoCamera, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Camera")
+                        }
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            cameraLauncher.launch(null)
-        } else {
-            Toast.makeText(context, "Camera permission required to upload stub", Toast.LENGTH_SHORT).show()
-        }
+                        OutlinedButton(onClick = {
+                            showImageSourceDialog = false
+                            galleryLauncher.launch("image/*")
+                        }) {
+                            Icon(Icons.Default.PhotoLibrary, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Gallery")
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = { showImageSourceDialog = false },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            }
+        )
     }
 
     ElevatedCard(
@@ -229,17 +284,20 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
 
                 if (event.imageUri == null) {
                     OutlinedButton(onClick = {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                        showImageSourceDialog = true
                     }) {
                         Text("Upload Stub")
                     }
                 } else {
-                    Text("Stub Saved", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                    TextButton(onClick = { showImageSourceDialog = true }) {
+                        Text("Change Stub ✓", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
 
             Divider(Modifier.padding(vertical = 8.dp))
 
+            // --- Repo / Notes Section ---
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -315,13 +373,31 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
 }
 
 
-/** ------------------------ helper function: save bitmap local ------------------------ */
+/** ------------------------ helper function: save bitmap ------------------------ */
 private fun saveBitmapToInternalStorage(context: Context, bitmap: Bitmap, eventId: String): String? {
     return try {
         val filename = "stub_$eventId.jpg"
         val fos: FileOutputStream = context.openFileOutput(filename, Context.MODE_PRIVATE)
         bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos)
         fos.close()
+        File(context.filesDir, filename).absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+/** ------------------------ helper function: save uri ------------------------ */
+private fun saveUriToInternalStorage(context: Context, uri: Uri, eventId: String): String? {
+    return try {
+        val inputStream = context.contentResolver.openInputStream(uri) ?: return null
+        val filename = "stub_${eventId}_${System.currentTimeMillis()}.jpg"
+        val fos = context.openFileOutput(filename, Context.MODE_PRIVATE)
+        inputStream.use { input ->
+            fos.use { output ->
+                input.copyTo(output)
+            }
+        }
         File(context.filesDir, filename).absolutePath
     } catch (e: Exception) {
         e.printStackTrace()
