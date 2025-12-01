@@ -10,6 +10,9 @@ interface UserEventDao {
     @Query("SELECT * FROM user_events ORDER BY dateText ASC")
     fun getAllEvents(): Flow<List<UserEvent>>
 
+    @Query("SELECT SUM(price) FROM user_events")
+    fun getTotalSpent(): Flow<Double?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addEvent(event: UserEvent)
 

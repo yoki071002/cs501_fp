@@ -30,6 +30,7 @@ class CalendarViewModel(
      *                   FLOW: All Events
      * --------------------------------------------------------- */
     val events = localRepo.getAllEvents()
+    val totalSpent = database.userEventDao().getTotalSpent()
 
     /* ---------------------------------------------------------
      *                   ADD EVENT (local + cloud)

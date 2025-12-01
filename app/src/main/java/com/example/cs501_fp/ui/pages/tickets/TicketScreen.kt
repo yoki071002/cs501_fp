@@ -1,85 +1,94 @@
 package com.example.cs501_fp.ui.pages.tickets
 
-import androidx.compose.foundation.background
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel // 确保引入这个
+import com.example.cs501_fp.data.local.entity.UserEvent
+import com.example.cs501_fp.viewmodel.CalendarViewModel
 
-/** ---------------- Ticket 数据模型（纯 UI 用） ---------------- */
-data class TicketItem(
-    val id: String,
-    val title: String,
-    val venue: String,
-    val dateText: String,   // "2025-10-08"
-    val timeText: String,   // "7:00 PM"
-    val seat: String,       // "Mezz C • Row D • 8"
-    val price: Double
-)
-
-/** ---------------- 假数据（你以后可改为从 DB 读取） ---------------- */
-private val demoTickets = listOf(
-    TicketItem(
-        id = "lk",
-        title = "The Lion King",
-        venue = "Minskoff Theatre",
-        dateText = "2025-09-15",
-        timeText = "7:00 PM",
-        seat = "Mezz C • Row D • 8",
-        price = 79.0
-    ),
-    TicketItem(
-        id = "wk",
-        title = "Wicked",
-        venue = "Gershwin Theatre",
-        dateText = "2025-10-02",
-        timeText = "8:00 PM",
-        seat = "Orch • Row F • 12",
-        price = 85.0
-    )
-)
-
-/** ------------------------ Ticket 主页面 ------------------------ */
+/** ------------------------ Ticket main screen ------------------------ */
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TicketScreen() {
+fun TicketScreen(
+    viewModel: CalendarViewModel = viewModel()
+) {
+    val events by viewModel.events.collectAsState(initial = emptyList())
+    val totalSpent by viewModel.totalSpent.collectAsState(initial = 0.0)
+
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("My Tickets") }) }
-    ) { inner ->
-        Column(
-            Modifier
+        topBar = { CenterAlignedTopAppBar(title = { Text("Ticket Wallent") }) }
+    ) {
+        inner ->
+        LazyColumn(
+            modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Text("Past Shows", style = MaterialTheme.typography.titleMedium)
-
-            demoTickets.forEach { ticket ->
-                TicketCard(ticket)
+            item {
+                SpendingSummaryCard(total = totalSpent ?: 0.0)
             }
 
-            Text("My Experience", style = MaterialTheme.typography.titleMedium)
+            item {
+                Text("My Tickets", style = MaterialTheme.typography.titleMedium)
+            }
 
-            ExperienceCard(
-                title = demoTickets.first().title
-            )
+            if (events.isEmpty()) {
+                item {
+                    Text(
+                        "No tickets yet. Add events from Calendar or Home!",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                items(events) { event ->
+                    TicketCard(event)
+                }
+            }
 
-            Spacer(Modifier.height(12.dp))
+            item {
+                Spacer(Modifier.height(60.dp))
+            }
         }
     }
 }
 
-/** ------------------------ 单张 Ticket 卡片 ------------------------ */
+
+/** ------------------------ Monetary feature card ------------------------ */
 @Composable
-private fun TicketCard(ticket: TicketItem) {
+fun SpendingSummaryCard(total: Double) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Text("Total Spent on Theater Shows", style = MaterialTheme.typography.labelMedium)
+            Text(
+                text = "\$${"%.2f".format(total)}",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+
+/** ------------------------  Single Ticket Card ------------------------ */
+@Composable
+private fun TicketCard(event: UserEvent) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
@@ -88,11 +97,10 @@ private fun TicketCard(ticket: TicketItem) {
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
             // Title
             Text(
-                ticket.title,
-                style = MaterialTheme.typography.titleSmall,
+                event.title,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -100,82 +108,40 @@ private fun TicketCard(ticket: TicketItem) {
 
             // Venue
             Text(
-                ticket.venue,
+                event.venue,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Date & Time
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(ticket.dateText, style = MaterialTheme.typography.bodySmall)
-                Text(ticket.timeText, style = MaterialTheme.typography.bodySmall)
+                Text(event.dateText, style = MaterialTheme.typography.bodySmall)
+                Text(event.timeText, style = MaterialTheme.typography.bodySmall)
             }
 
             // Seat
-            Text("Seat: ${ticket.seat}", style = MaterialTheme.typography.bodySmall)
+            if (event.seat.isNotBlank()) {
+                Text("Seat: ${event.seat}", style = MaterialTheme.typography.bodySmall)
+            }
 
-            // Price + Detail Button
+            Divider(Modifier.padding(vertical = 8.dp))
+
+            // Price + Action
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Price: \$${"%.2f".format(ticket.price)}",
+                    "Price: \$${"%.2f".format(event.price)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
-                OutlinedButton(onClick = { /* TODO: View Ticket Detail */ }) {
-                    Text("View Details")
-                }
+
+                // 🟢 这里未来可以加拍照按钮 (Phase 3)
+                // OutlinedButton(onClick = { /* TODO: Upload Photo */ }) { Text("Upload Stub") }
             }
         }
     }
-}
-
-/** ------------------------ Experience Card ------------------------ */
-@Composable
-private fun ExperienceCard(title: String) {
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(
-            Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                "My Experience",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(120.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Photo", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = { /* TODO: Add Review */ }) { Text("Add Review") }
-                OutlinedButton(onClick = { /* TODO: Upload Photo */ }) { Text("Upload Photo") }
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF)
-@Composable
-private fun TicketScreenPreview() {
-    MaterialTheme { TicketScreen() }
 }
