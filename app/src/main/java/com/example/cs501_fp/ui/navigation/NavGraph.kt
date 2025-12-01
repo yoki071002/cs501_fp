@@ -27,12 +27,16 @@ import com.example.cs501_fp.ui.pages.profile.ProfileScreen
 import com.example.cs501_fp.ui.pages.tickets.TicketScreen
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.HomeViewModel
+import com.example.cs501_fp.viewmodel.ThemeViewModel
 
 data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun NavGraph(navController: NavHostController = rememberNavController()) {
+fun NavGraph(
+    navController: NavHostController = rememberNavController(),
+    themeViewModel: ThemeViewModel
+) {
 
     /** ----------- Bottom Navigation Items ----------- */
     val items = listOf(
@@ -142,7 +146,10 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
 
             /** ---------------- PROFILE ---------------- */
             composable("profile") {
-                ProfileScreen(navController = navController)
+                ProfileScreen(
+                    navController = navController,
+                    themeViewModel = themeViewModel
+                )
             }
         }
     }

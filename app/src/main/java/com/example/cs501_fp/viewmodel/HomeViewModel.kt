@@ -53,16 +53,30 @@ class HomeViewModel : ViewModel() {
     }
 
     fun playPreview(context: Context, id: String) {
-        val url = _dailyPick.value?.id ?: return
+        val url = _dailyPick.value?.id
+
+        if (url.isNullOrEmpty() || !url.startsWith("http")) {
+            android.widget.Toast.makeText(context, "No preview audio available", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+
         try {
-            mediaPlayer?.release()
+            stopPreview()
             mediaPlayer = MediaPlayer().apply {
                 setDataSource(url)
                 prepareAsync()
-                setOnPreparedListener { start() }
+                setOnPreparedListener {
+                    start()
+                    android.widget.Toast.makeText(context, "Playing preview...", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                setOnErrorListener { _, _, _ ->
+                    android.widget.Toast.makeText(context, "Error playing audio", android.widget.Toast.LENGTH_SHORT).show()
+                    false
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            android.widget.Toast.makeText(context, "Playback failed", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -70,6 +84,11 @@ class HomeViewModel : ViewModel() {
         mediaPlayer?.stop()
         mediaPlayer?.release()
         mediaPlayer = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        stopPreview()
     }
 
     fun loadData() {

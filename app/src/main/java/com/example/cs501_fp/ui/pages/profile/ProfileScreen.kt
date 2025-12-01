@@ -14,12 +14,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
+import com.example.cs501_fp.viewmodel.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(navController: NavHostController) {
+fun ProfileScreen(
+    navController: NavHostController,
+    themeViewModel: ThemeViewModel
+) {
     var notify by remember { mutableStateOf(true) }
-    var darkMode by remember { mutableStateOf(false) }
+    val isDark by themeViewModel.isDarkTheme.collectAsState()
     val auth = FirebaseAuth.getInstance()
     val currentUser = auth.currentUser
     val email = currentUser?.email ?: "Guest"
@@ -85,10 +89,10 @@ fun ProfileScreen(navController: NavHostController) {
                     ) {
                         Text("Dark Mode")
                         Switch(
-                            checked = darkMode,
+                            checked = isDark,
                             onCheckedChange = {
-                                darkMode = it
-                                android.widget.Toast.makeText(context, "Dark mode setting saved", android.widget.Toast.LENGTH_SHORT).show()
+                                themeViewModel.toggleTheme(it)
+                                android.widget.Toast.makeText(context, if(it) "Dark Mode On" else "Light Mode On", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
