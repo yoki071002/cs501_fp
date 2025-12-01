@@ -182,25 +182,40 @@ class HomeViewModel : ViewModel() {
             val startOfWeekWithTime = startOfWeekDate.atStartOfDay().atZone(ZoneId.systemDefault())
             val endOfWeekWithTime = endOfWeekDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault())
 
-            val events = ticketRepo.getEvents(startOfWeekWithTime, endOfWeekWithTime)
+            val rawEvents = ticketRepo.getEvents(startOfWeekWithTime, endOfWeekWithTime)
 
-            _showsThisWeek.value = events
-                .mapNotNull { event ->
-                    val dateStr = event.dates?.start?.localDate
-                    if (dateStr != null) {
-                        ShowSummary(
-                            id = event.id ?: "",
-                            title = event.name ?: "Untitled",
-                            venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
-                            dateTime = LocalDate.parse(dateStr),
-                            priceFrom = 100,
-                            imageUrl = event.images?.firstOrNull()?.url
-                        )
-                    } else {
-                        null
-                    }
+            val mappedCandidates = rawEvents.mapNotNull { event ->
+                val dateStr = event.dates?.start?.localDate
+                val timeStr = event.dates?.start?.localTime ?: "00:00"
+
+                if (dateStr != null) {
+                    val summary = ShowSummary(
+                        id = event.id ?: "",
+                        title = event.name ?: "Untitled",
+                        venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
+                        dateTime = LocalDate.parse(dateStr),
+                        priceFrom = 100,
+                        imageUrl = event.images?.firstOrNull()?.url
+                    )
+                    Triple(summary, event.name ?: "", timeStr)
+                } else {
+                    null
                 }
+            }
+
+            val distinctEvents = mappedCandidates.distinctBy { (summary, rawTitle, timeStr) ->
+                val normalizedTitle = rawTitle
+                    .replace(Regex("\\(.*?\\)"), "")
+                    .replace(Regex(" - .*"), "")
+                    .trim()
+                    .lowercase()
+                "$normalizedTitle|${summary.dateTime}|$timeStr"
+            }
+
+            _showsThisWeek.value = distinctEvents
+                .map { it.first }
                 .groupBy { it.dateTime }
         }
     }
+
 }
