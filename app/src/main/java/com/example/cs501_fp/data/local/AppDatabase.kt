@@ -14,7 +14,7 @@ import com.example.cs501_fp.data.local.entity.Experience
         UserEvent::class,
         Experience::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

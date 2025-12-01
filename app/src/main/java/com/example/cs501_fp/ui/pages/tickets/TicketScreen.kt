@@ -11,14 +11,19 @@ import java.io.File
 import java.io.FileOutputStream
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -109,6 +114,9 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
 
+    var noteText by remember { mutableStateOf(event.notes) }
+    var isEditingNote by remember { mutableStateOf(false) }
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -170,7 +178,6 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
                 verticalAlignment = Alignment.Top
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    // Title
                     Text(
                         event.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -178,8 +185,6 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-
-                    // Venue
                     Text(
                         event.venue,
                         style = MaterialTheme.typography.bodySmall,
@@ -199,20 +204,17 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
                 }
             }
 
-            // Date & Time
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(event.dateText, style = MaterialTheme.typography.bodySmall)
                 Text(event.timeText, style = MaterialTheme.typography.bodySmall)
             }
 
-            // Seat
             if (event.seat.isNotBlank()) {
                 Text("Seat: ${event.seat}", style = MaterialTheme.typography.bodySmall)
             }
 
             Divider(Modifier.padding(vertical = 8.dp))
 
-            // Price + Action
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -232,7 +234,66 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
                         Text("Upload Stub")
                     }
                 } else {
-                    Text("Stub Saved ✓", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                    Text("Stub Saved", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            Divider(Modifier.padding(vertical = 8.dp))
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("My Repo:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+
+                IconButton(
+                    onClick = {
+                        if (isEditingNote) {
+                            viewModel.updateEvent(event.copy(notes = noteText))
+                            Toast.makeText(context, "Note saved", Toast.LENGTH_SHORT).show()
+                            isEditingNote = false
+                        } else {
+                            isEditingNote = true
+                        }
+                    },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isEditingNote) Icons.Default.Check else Icons.Default.Edit,
+                        contentDescription = if (isEditingNote) "Save Note" else "Edit Note",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            if (isEditingNote) {
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    placeholder = { Text("Write your review here...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    minLines = 2,
+                    maxLines = 4
+                )
+            } else {
+                if (noteText.isNotBlank()) {
+                    Text(
+                        text = noteText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    )
+                } else {
+                    Text(
+                        text = "No notes yet. Click edit to add one.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    )
                 }
             }
 
