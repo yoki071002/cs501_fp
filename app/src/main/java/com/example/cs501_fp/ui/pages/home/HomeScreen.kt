@@ -3,17 +3,17 @@ package com.example.cs501_fp.ui.pages.home
 import android.os.Build
 import androidx.annotation.RequiresApi
 import coil.compose.AsyncImage
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -21,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -33,8 +32,6 @@ import com.example.cs501_fp.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-/** Simple model for a show item on Home */
-
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -45,6 +42,7 @@ fun HomeScreen(
     val dailyPick by viewModel.dailyPick.collectAsState()
     val showsByDay by viewModel.showsThisWeek.collectAsState()
     val isPrevWeekEnabled by viewModel.isPrevWeekEnabled.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
 
     val sortedDays = showsByDay.keys.sorted()
 
@@ -68,8 +66,9 @@ fun HomeScreen(
                 dailyPick?.let { pick ->
                     DailyPickBanner(
                         pick = pick,
+                        isPlaying = isPlaying,
                         onListenClick = {
-                            viewModel.playPreview(context, pick.id)
+                            viewModel.togglePlayPreview(context, pick.id)
                         }
                     )
                 }
@@ -156,29 +155,67 @@ private fun DailyShowsItem(
 @Composable
 private fun DailyPickBanner(
     pick: ShowSummary,
-    onListenClick: (ShowSummary) -> Unit
+    isPlaying: Boolean,
+    onListenClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(160.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.secondary
-                    )
-                )
-            )
-            .clickable { onListenClick(pick) },
-        contentAlignment = Alignment.CenterStart
+            .clickable { onListenClick() },
+        contentAlignment = Alignment.BottomStart
     ) {
+        if (pick.imageUrl != null) {
+            AsyncImage(
+                model = pick.imageUrl,
+                contentDescription = "Album Art",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.primary))
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.4f))
+        )
+
         Column(Modifier.padding(16.dp)) {
-            Text("Daily Pick", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
-            Text(pick.title, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(8.dp))
-            AssistChip(onClick = { onListenClick(pick) }, label = { Text("Listen") })
+            Text("Daily Pick", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+            Text(
+                pick.title,
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                pick.venue,
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 14.sp,
+                maxLines = 1
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            Button(
+                onClick = onListenClick,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(if (isPlaying) "Pause" else "Listen")
+            }
         }
     }
 }
@@ -190,7 +227,7 @@ private fun SectionHeader(title: String, isPrevEnabled: Boolean, onPrev: () -> U
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = onPrev, enabled = isPrevEnabled) { Text("‹") } // 使用 enabled 属性
+        TextButton(onClick = onPrev, enabled = isPrevEnabled) { Text("‹") }
         TextButton(onClick = onNext) { Text("›") }
     }
 }

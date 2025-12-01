@@ -1,8 +1,10 @@
 package com.example.cs501_fp.viewmodel
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -21,6 +23,10 @@ class HomeViewModel : ViewModel() {
     private val ticketRepo = TicketmasterRepository()
     private val itunesRepo = ItunesRepository()
     private var mediaPlayer: MediaPlayer? = null
+    private var currentPlayingUrl: String? = null
+
+    private val _isPlaying = MutableStateFlow(false)
+    val isPlaying: StateFlow<Boolean> = _isPlaying
 
     private val _dailyPick = MutableStateFlow<ShowSummary?>(null)
     val dailyPick: StateFlow<ShowSummary?> = _dailyPick
@@ -52,38 +58,76 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun playPreview(context: Context, id: String) {
-        val url = _dailyPick.value?.id
+    fun togglePlayPreview(context: Context, url: String) {
+        if (url.isEmpty()) return
 
-        if (url.isNullOrEmpty() || !url.startsWith("http")) {
-            android.widget.Toast.makeText(context, "No preview audio available", android.widget.Toast.LENGTH_SHORT).show()
+        if (currentPlayingUrl == url && mediaPlayer != null) {
+            if (mediaPlayer!!.isPlaying) {
+                mediaPlayer!!.pause()
+                _isPlaying.value = false
+                Toast.makeText(context, "Paused ⏸", Toast.LENGTH_SHORT).show()
+            } else {
+                mediaPlayer!!.start()
+                _isPlaying.value = true
+                Toast.makeText(context, "Resumed ▶", Toast.LENGTH_SHORT).show()
+            }
             return
         }
 
+        startNewPreview(context, url)
+    }
+
+    private fun startNewPreview(context: Context, url: String) {
         try {
             stopPreview()
+            Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+
             mediaPlayer = MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .build()
+                )
                 setDataSource(url)
                 prepareAsync()
+
                 setOnPreparedListener {
                     start()
-                    android.widget.Toast.makeText(context, "Playing preview...", android.widget.Toast.LENGTH_SHORT).show()
+                    _isPlaying.value = true
+                    currentPlayingUrl = url
+                    Toast.makeText(context, "Playing 🎵", Toast.LENGTH_SHORT).show()
                 }
+
+                // 播放结束监听
+                setOnCompletionListener {
+                    _isPlaying.value = false
+                }
+
                 setOnErrorListener { _, _, _ ->
-                    android.widget.Toast.makeText(context, "Error playing audio", android.widget.Toast.LENGTH_SHORT).show()
-                    false
+                    _isPlaying.value = false
+                    Toast.makeText(context, "Error playing audio", Toast.LENGTH_SHORT).show()
+                    true
                 }
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            android.widget.Toast.makeText(context, "Playback failed", android.widget.Toast.LENGTH_SHORT).show()
+            _isPlaying.value = false
         }
     }
 
     fun stopPreview() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
-        mediaPlayer = null
+        try {
+            if (mediaPlayer?.isPlaying == true) {
+                mediaPlayer?.stop()
+            }
+            mediaPlayer?.release()
+            mediaPlayer = null
+            _isPlaying.value = false
+            currentPlayingUrl = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onCleared() {
@@ -102,32 +146,39 @@ class HomeViewModel : ViewModel() {
 
     private fun loadDailyPick() {
         viewModelScope.launch {
-            val response = itunesRepo.getMusicalSongs("broadway musical")
-            val track = response.results.randomOrNull()
+            try {
+                val response = itunesRepo.getMusicalSongs("broadway musical")
+                val track = response.results
+                    .filter { !it.previewUrl.isNullOrEmpty() && !it.artworkUrl100.isNullOrEmpty() }
+                    .randomOrNull()
 
-            if (track == null) {
+                if (track == null) {
+                    _dailyPick.value = null
+                    return@launch
+                }
+
+                val highResImage = track.artworkUrl100?.replace("100x100", "600x600")
+
+                _dailyPick.value = ShowSummary(
+                    id = track.previewUrl ?: "",
+                    title = track.trackName ?: "Unknown Song",
+                    venue = track.artistName ?: "Unknown Artist",
+                    dateTime = LocalDate.now(),
+                    priceFrom = 0,
+                    imageUrl = highResImage
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
                 _dailyPick.value = null
-                return@launch
             }
-
-            _dailyPick.value = ShowSummary(
-                id = track.previewUrl ?: "unknown-id",
-                title = track.trackName ?: "Unknown Song",
-                venue = track.artistName ?: "Unknown Artist",
-                dateTime = LocalDate.now(),
-                priceFrom = 0,
-                imageUrl = track.artworkUrl100
-            )
         }
     }
 
     private fun loadShowsThisWeek() {
         viewModelScope.launch {
             updatePrevWeekButtonState()
-
             val startOfWeekDate = _currentWeekStart.value.with(DayOfWeek.MONDAY)
             val endOfWeekDate = startOfWeekDate.plusDays(6)
-
             val startOfWeekWithTime = startOfWeekDate.atStartOfDay().atZone(ZoneId.systemDefault())
             val endOfWeekWithTime = endOfWeekDate.atTime(23, 59, 59).atZone(ZoneId.systemDefault())
 
