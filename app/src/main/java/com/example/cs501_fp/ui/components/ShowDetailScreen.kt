@@ -272,6 +272,12 @@ fun ShowDetailScreen(
                             text = "${s.dates?.start?.localDate ?: "TBD"} at ${s.dates?.start?.localTime ?: "TBD"}",
                             style = MaterialTheme.typography.bodyLarge
                         )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "(Venue Local Time)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
