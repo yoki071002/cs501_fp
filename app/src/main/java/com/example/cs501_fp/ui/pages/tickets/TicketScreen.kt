@@ -1,5 +1,14 @@
 package com.example.cs501_fp.ui.pages.tickets
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.Manifest
+import android.content.Context
+import android.graphics.Bitmap
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import java.io.File
+import java.io.FileOutputStream
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
@@ -10,10 +19,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel // 确保引入这个
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 
@@ -88,7 +100,31 @@ fun SpendingSummaryCard(total: Double) {
 
 /** ------------------------  Single Ticket Card ------------------------ */
 @Composable
-private fun TicketCard(event: UserEvent) {
+private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewModel()) {
+    val context = LocalContext.current
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        if (bitmap != null) {
+            val uriStr = saveBitmapToInternalStorage(context, bitmap, event.id)
+            if (uriStr != null) {
+                val updatedEvent = event.copy(imageUri = uriStr as String?)
+                viewModel.updateEvent(updatedEvent)
+            }
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        } else {
+            Toast.makeText(context, "Camera permission required to upload stub", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
@@ -124,6 +160,9 @@ private fun TicketCard(event: UserEvent) {
                 Text("Seat: ${event.seat}", style = MaterialTheme.typography.bodySmall)
             }
 
+            Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text("${event.dateText} • ${event.timeText}", style = MaterialTheme.typography.bodySmall)
+
             Divider(Modifier.padding(vertical = 8.dp))
 
             // Price + Action
@@ -139,9 +178,45 @@ private fun TicketCard(event: UserEvent) {
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // 🟢 这里未来可以加拍照按钮 (Phase 3)
-                // OutlinedButton(onClick = { /* TODO: Upload Photo */ }) { Text("Upload Stub") }
+                if (event.imageUri == null) {
+                    OutlinedButton(onClick = {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }) {
+                        Text("Upload Stub")
+                    }
+                } else {
+                    Text("Stub Saved ✓", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            if (event.imageUri != null) {
+                Spacer(Modifier.height(8.dp))
+                Text("My Ticket Stub:", style = MaterialTheme.typography.labelSmall)
+                AsyncImage(
+                    model = event.imageUri,
+                    contentDescription = "Ticket Stub",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
             }
         }
+    }
+}
+
+
+/** ------------------------ helper function: save bitmap local ------------------------ */
+private fun saveBitmapToInternalStorage(context: Context, bitmap: Bitmap, eventId: String): String? {
+    return try {
+        val filename = "stub_$eventId.jpg"
+        val fos: FileOutputStream = context.openFileOutput(filename, Context.MODE_PRIVATE)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 90, fos)
+        fos.close()
+        File(context.filesDir, filename).absolutePath
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
     }
 }

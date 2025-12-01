@@ -14,5 +14,6 @@ data class UserEvent(
     val dateText: String,   // 2025-11-25
     val timeText: String,      // "7:00 PM"
     val seat: String,          // not nullable
-    val price: Double
+    val price: Double,
+    val imageUri: String? = null
 )

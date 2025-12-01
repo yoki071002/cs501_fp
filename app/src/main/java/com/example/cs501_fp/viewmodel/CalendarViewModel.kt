@@ -48,6 +48,19 @@ class CalendarViewModel(
     }
 
     /* ---------------------------------------------------------
+     *                   ADD EVENT (Update photo)
+     * --------------------------------------------------------- */
+    fun updateEvent(event: UserEvent) {
+        viewModelScope.launch {
+            localRepo.addEvent(event)
+
+            FirebaseAuth.getInstance().currentUser?.let {
+                cloudRepo.uploadEvent(event)
+            }
+        }
+    }
+
+    /* ---------------------------------------------------------
      *                   DELETE EVENT (local + cloud)
      * --------------------------------------------------------- */
     fun deleteEvent(event: UserEvent) {

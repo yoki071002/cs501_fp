@@ -14,7 +14,7 @@ import com.example.cs501_fp.data.local.entity.Experience
         UserEvent::class,
         Experience::class
     ],
-    version = 3,           // ← 推荐升级版本号（你改字段结构了）
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -33,7 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "app.db"
                 )
-                    .fallbackToDestructiveMigration()   // 结构变动时自动重建 DB（避免 crash）
+                    .fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }
             }
