@@ -28,6 +28,7 @@ import com.example.cs501_fp.ui.pages.tickets.TicketScreen
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
+import com.example.cs501_fp.ui.pages.auth.RegisterScreen
 
 data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -83,6 +84,10 @@ fun NavGraph(
             /** ---------------- LOGIN ---------------- */
             composable("login") {
                 LoginScreen(navController = navController)
+            }
+
+            composable("register") {
+                RegisterScreen(navController = navController)
             }
 
             /** ---------------- HOME ---------------- */
