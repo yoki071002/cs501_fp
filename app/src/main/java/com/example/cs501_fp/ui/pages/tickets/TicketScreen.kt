@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,7 +38,10 @@ import com.example.cs501_fp.viewmodel.CalendarViewModel
 fun TicketScreen(
     viewModel: CalendarViewModel = viewModel()
 ) {
-    val events by viewModel.events.collectAsState(initial = emptyList())
+    val rawEvents by viewModel.events.collectAsState(initial = emptyList())
+    val events = remember(rawEvents) {
+        rawEvents.sortedByDescending { it.dateText }
+    }
     val totalSpent by viewModel.totalSpent.collectAsState(initial = 0.0)
 
     Scaffold(
@@ -102,6 +107,32 @@ fun SpendingSummaryCard(total: Double) {
 @Composable
 private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewModel()) {
     val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Ticket") },
+            text = { Text("Are you sure you want to remove this ticket from your wallet?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteEvent(event)
+                        showDeleteDialog = false
+                        Toast.makeText(context, "Ticket removed", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
@@ -133,21 +164,40 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
             Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Title
-            Text(
-                event.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // Title
+                    Text(
+                        event.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-            // Venue
-            Text(
-                event.venue,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                    // Venue
+                    Text(
+                        event.venue,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Ticket",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+                    )
+                }
+            }
 
             // Date & Time
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
