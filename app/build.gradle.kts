@@ -83,7 +83,7 @@ dependencies {
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
-    kapt("androidx.room:room-compiler:$roomVersion")
+    "kapt"("androidx.room:room-compiler:$roomVersion")
 
     /* -------------------- Firebase -------------------- */
     implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
