@@ -10,16 +10,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(navController: NavHostController) {
     var notify by remember { mutableStateOf(true) }
     var darkMode by remember { mutableStateOf(false) }
-    val userName = remember { "Nana Cui" }
-    val email = remember { "nana@example.com" }
+    val auth = FirebaseAuth.getInstance()
+    val currentUser = auth.currentUser
+    val email = currentUser?.email ?: "Guest"
+    val userName = if (currentUser != null) email.substringBefore("@") else "Guest User"
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("Profile") }) }
@@ -37,15 +40,21 @@ fun ProfileScreen() {
                     Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = userName.take(1).uppercase(),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(userName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Text(email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Spacer(Modifier.weight(1f))
-                OutlinedButton(onClick = { /* TODO: edit */ }) { Text("Edit") }
             }
 
             // Account & Preferences
@@ -70,25 +79,28 @@ fun ProfileScreen() {
                         Text("Dark Mode")
                         Switch(checked = darkMode, onCheckedChange = { darkMode = it })
                     }
-
-                    OutlinedButton(onClick = { /* TODO: link devices / sync */ }) { Text("Manage Data Sync") }
                 }
             }
 
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("About", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    Text("Account", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                     Text("Version 1.0.0", style = MaterialTheme.typography.bodySmall)
-                    OutlinedButton(onClick = { /* TODO: sign out */ }) { Text("Sign Out") }
+
+                    Button(
+                        onClick = {
+                            auth.signOut()
+                            navController.navigate("login") {
+                                popUpTo(0)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Sign Out")
+                    }
                 }
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
-}
-
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF)
-@Composable
-private fun ProfilePreview() {
-    MaterialTheme { ProfileScreen() }
 }

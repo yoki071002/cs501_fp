@@ -1,5 +1,7 @@
 package com.example.cs501_fp.ui.navigation
 
+import com.google.firebase.auth.FirebaseAuth
+import com.example.cs501_fp.ui.pages.auth.LoginScreen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
@@ -44,29 +46,40 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
     val homeVM: HomeViewModel = viewModel()
     val calendarVM: CalendarViewModel = viewModel()
 
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val startDestination = if (currentUser != null) "home" else "login"
+    val currentRoute = navController.currentDestination?.route
+    val showBottomBar = currentRoute != "login"
+
     Scaffold(
         bottomBar = {
-            BottomNavBar(
-                items = items,
-                currentDestination = navController.currentDestination?.route,
-                onItemClick = { route ->
-                    navController.navigate(route) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+            if (showBottomBar) {
+                BottomNavBar(
+                    items = items,
+                    currentDestination = currentRoute,
+                    onItemClick = { route ->
+                        navController.navigate(route) {
+                            launchSingleTop = true
+                            restoreState = true
+                            popUpTo("home") {
+                                saveState = true
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         }
     ) { inner ->
 
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = startDestination,
             modifier = Modifier.padding(inner)
         ) {
+            /** ---------------- LOGIN ---------------- */
+            composable("login") {
+                LoginScreen(navController = navController)
+            }
 
             /** ---------------- HOME ---------------- */
             composable("home") {
@@ -124,12 +137,12 @@ fun NavGraph(navController: NavHostController = rememberNavController()) {
 
             /** ---------------- TICKETS ---------------- */
             composable("tickets") {
-                TicketScreen()   // no viewmodel
+                TicketScreen()
             }
 
             /** ---------------- PROFILE ---------------- */
             composable("profile") {
-                ProfileScreen()
+                ProfileScreen(navController = navController)
             }
         }
     }
