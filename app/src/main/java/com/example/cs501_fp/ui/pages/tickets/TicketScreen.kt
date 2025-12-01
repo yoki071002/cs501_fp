@@ -160,9 +160,6 @@ private fun TicketCard(event: UserEvent, viewModel: CalendarViewModel = viewMode
                 Text("Seat: ${event.seat}", style = MaterialTheme.typography.bodySmall)
             }
 
-            Text(event.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text("${event.dateText} • ${event.timeText}", style = MaterialTheme.typography.bodySmall)
-
             Divider(Modifier.padding(vertical = 8.dp))
 
             // Price + Action
