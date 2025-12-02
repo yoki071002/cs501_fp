@@ -24,6 +24,7 @@ class HomeViewModel : ViewModel() {
     private val itunesRepo = ItunesRepository()
     private var mediaPlayer: MediaPlayer? = null
     private var currentPlayingUrl: String? = null
+    private var lastPickDate: LocalDate? = null
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying
@@ -144,6 +145,12 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun loadDailyPick() {
+        val today = LocalDate.now()
+
+        if (_dailyPick.value != null && lastPickDate == today) {
+            return
+        }
+
         viewModelScope.launch {
             try {
                 val response = itunesRepo.getMusicalSongs("broadway musical")
@@ -166,6 +173,9 @@ class HomeViewModel : ViewModel() {
                     priceFrom = 0,
                     imageUrl = highResImage
                 )
+
+                lastPickDate = today
+
             } catch (e: Exception) {
                 e.printStackTrace()
                 _dailyPick.value = null
@@ -216,5 +226,4 @@ class HomeViewModel : ViewModel() {
                 .groupBy { it.dateTime }
         }
     }
-
 }
