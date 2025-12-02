@@ -54,7 +54,7 @@ class FirestoreRepository {
 
 
     /* --------------------------------------------------------
-     *                     COMMUNITY FEATURES (NEW)
+     *                     COMMUNITY FEATURES
      * -------------------------------------------------------- */
 
     /** 更新公开状态 */
@@ -62,14 +62,14 @@ class FirestoreRepository {
         val doc = userDoc() ?: return
         doc.collection("events")
             .document(eventId)
-            .update("isPublic", isPublic)
+            .update("public", isPublic)
     }
 
     /** 获取社区所有公开帖子 */
     suspend fun getPublicEvents(): List<UserEvent> {
         return try {
             db.collectionGroup("events")
-                .whereEqualTo("isPublic", true)
+                .whereEqualTo("public", true)
                 .orderBy("dateText", Query.Direction.DESCENDING)
                 .limit(50)
                 .get()
