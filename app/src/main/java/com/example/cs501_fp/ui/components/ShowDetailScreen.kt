@@ -45,13 +45,10 @@ fun ShowDetailScreen(
     val existingEvents by calendarViewModel.events.collectAsState(initial = emptyList())
 
     val context = LocalContext.current
-
     var isAdded by remember { mutableStateOf(false) }
-
     var showInputDialog by remember { mutableStateOf(false) }
-
     var showConflictDialog by remember { mutableStateOf(false) }
-    var pendingEvent by remember { mutableStateOf<UserEvent?>(null) } // 暂存
+    var pendingEvent by remember { mutableStateOf<UserEvent?>(null) }
 
     var inputPrice by remember { mutableStateOf("") }
     var inputSeat by remember { mutableStateOf("") }
@@ -86,20 +83,14 @@ fun ShowDetailScreen(
         AlertDialog(
             onDismissRequest = { showConflictDialog = false },
             title = { Text("Time Conflict Warning") },
-            text = {
-                Text("You already have another event scheduled around this time on ${pendingEvent?.dateText}. Do you want to add this one anyway?")
-            },
+            text = { Text("You already have another event scheduled around this time on ${pendingEvent?.dateText}. Do you want to add this one anyway?") },
             confirmButton = {
-                Button(onClick = {
-                    pendingEvent?.let { saveEventToWallet(it) }
-                }) {
+                Button(onClick = { pendingEvent?.let { saveEventToWallet(it) } }) {
                     Text("Yes, Add It")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showConflictDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showConflictDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -111,14 +102,12 @@ fun ShowDetailScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("Please enter your ticket details for accurate tracking:")
-
                     OutlinedTextField(
                         value = inputSeat,
                         onValueChange = { inputSeat = it },
                         label = { Text("Seat") },
                         singleLine = true
                     )
-
                     OutlinedTextField(
                         value = inputPrice,
                         onValueChange = { inputPrice = it },
@@ -136,6 +125,9 @@ fun ShowDetailScreen(
                             val finalPrice = inputPrice.toDoubleOrNull() ?: 0.0
                             val finalSeat = inputSeat.ifBlank { "General Admission" }
 
+                            val finalImageUrl = s.images?.firstOrNull { it.url?.contains("TABLET") == true }?.url
+                                ?: s.images?.firstOrNull()?.url
+
                             val newEvent = UserEvent(
                                 id = UUID.randomUUID().toString(),
                                 title = s.name ?: "Unknown Show",
@@ -144,17 +136,16 @@ fun ShowDetailScreen(
                                 timeText = s.dates?.start?.localTime ?: "19:00",
                                 seat = finalSeat,
                                 price = finalPrice,
-                                imageUri = null
+                                officialImageUrl = finalImageUrl,
+                                userImageUris = emptyList()
                             )
 
                             val newTimeMin = parseTime(newEvent.timeText)
                             val hasConflict = existingEvents.any { event ->
                                 if (event.dateText == newEvent.dateText) {
                                     val existingTimeMin = parseTime(event.timeText)
-                                    abs(newTimeMin - existingTimeMin) < 180 // 间隔小于3小时
-                                } else {
-                                    false
-                                }
+                                    abs(newTimeMin - existingTimeMin) < 180
+                                } else false
                             }
 
                             if (hasConflict) {
@@ -166,23 +157,16 @@ fun ShowDetailScreen(
                             }
                         }
                     }
-                ) {
-                    Text("Save Ticket")
-                }
+                ) { Text("Save Ticket") }
             },
             dismissButton = {
-                TextButton(onClick = { showInputDialog = false }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { showInputDialog = false }) { Text("Cancel") }
             }
         )
     }
 
     if (show == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
     } else {
@@ -193,69 +177,44 @@ fun ShowDetailScreen(
                     title = { Text(s.name ?: "Show Detail") },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 )
             },
             floatingActionButton = {
                 ExtendedFloatingActionButton(
-                    onClick = {
-                        if (!isAdded) {
-                            showInputDialog = true
-                        }
-                    },
+                    onClick = { if (!isAdded) showInputDialog = true },
                     containerColor = if (isAdded) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary,
                     contentColor = if (isAdded) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onPrimary
                 ) {
-                    Icon(
-                        imageVector = if (isAdded) Icons.Default.Check else Icons.Default.Add,
-                        contentDescription = "Add"
-                    )
+                    Icon(if (isAdded) Icons.Default.Check else Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(if (isAdded) "Added" else "I Bought a Ticket")
                 }
             }
         ) { inner ->
             Column(
-                modifier = Modifier
-                    .padding(inner)
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                modifier = Modifier.padding(inner).fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                val imageUrl = s.images?.firstOrNull { it.url?.contains("TABLET") == true }?.url
-                    ?: s.images?.firstOrNull()?.url
-
+                val imageUrl = s.images?.firstOrNull { it.url?.contains("TABLET") == true }?.url ?: s.images?.firstOrNull()?.url
                 if (imageUrl != null) {
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = "Poster",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(240.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                        modifier = Modifier.fillMaxWidth().height(240.dp).clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop
                     )
                     Spacer(Modifier.height(16.dp))
                 }
 
-                Text(
-                    text = s.name ?: "Untitled Show",
-                    style = MaterialTheme.typography.headlineMedium
-                )
+                Text(s.name ?: "Untitled Show", style = MaterialTheme.typography.headlineMedium)
 
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text(text = "Venue", style = MaterialTheme.typography.labelMedium)
-                        Text(
-                            text = s._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        Text("Venue", style = MaterialTheme.typography.labelMedium)
+                        Text(s._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre", style = MaterialTheme.typography.bodyLarge)
                     }
                 }
 
@@ -267,24 +226,16 @@ fun ShowDetailScreen(
 
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
-                        Text(text = "Date & Time", style = MaterialTheme.typography.labelMedium)
-                        Text(
-                            text = "${s.dates?.start?.localDate ?: "TBD"} at ${s.dates?.start?.localTime ?: "TBD"}",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        Text("Date & Time", style = MaterialTheme.typography.labelMedium)
+                        Text("${s.dates?.start?.localDate ?: "TBD"} at ${s.dates?.start?.localTime ?: "TBD"}", style = MaterialTheme.typography.bodyLarge)
                         Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "(Venue Local Time)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text("(Venue Local Time)", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
 
                 if (!s.url.isNullOrBlank()) {
-                    Text(text = "More Info: ${s.url}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    Text("More Info: ${s.url}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                 }
-
                 Spacer(Modifier.height(80.dp))
             }
         }

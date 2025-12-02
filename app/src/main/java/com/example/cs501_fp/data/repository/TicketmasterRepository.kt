@@ -55,4 +55,24 @@ class TicketmasterRepository {
             null
         }
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    suspend fun searchEventsByKeyword(keyword: String): List<TicketmasterEvent> {
+        return try {
+            val now = ZonedDateTime.now()
+            val response = api.getEvents(
+                apiKey = Constants.TICKETMASTER_API_KEY,
+                city = "New York",
+                startDateTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                endDateTime = now.plusMonths(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
+                size = 10,
+                keyword = keyword,
+                classificationName = "Theatre",
+                sort = "date,asc"
+            )
+            response._embedded?.events ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }

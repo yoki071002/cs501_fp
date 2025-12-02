@@ -8,6 +8,10 @@ import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.data.repository.FirestoreRepository
 import com.example.cs501_fp.data.repository.LocalRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.example.cs501_fp.data.model.TicketmasterEvent
+import com.example.cs501_fp.data.repository.TicketmasterRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class CalendarViewModel(
@@ -25,6 +29,30 @@ class CalendarViewModel(
     )
 
     private val cloudRepo = FirestoreRepository()
+
+    private val ticketRepo = TicketmasterRepository()
+
+    /* ---------------------------------------------------------
+     *                   SEARCH STATE
+     * --------------------------------------------------------- */
+    private val _searchResults = MutableStateFlow<List<TicketmasterEvent>>(emptyList())
+    val searchResults: StateFlow<List<TicketmasterEvent>> = _searchResults
+
+    fun searchEvents(query: String) {
+        viewModelScope.launch {
+            if (query.length > 2) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    _searchResults.value = ticketRepo.searchEventsByKeyword(query)
+                }
+            } else {
+                _searchResults.value = emptyList()
+            }
+        }
+    }
+
+    fun clearSearchResults() {
+        _searchResults.value = emptyList()
+    }
 
     /* ---------------------------------------------------------
      *                   FLOW: All Events
