@@ -1,12 +1,3 @@
-//opAppBar：标题“My Calendar” + “Add Event” 按钮
-//
-//月视图：7 列网格（Sun–Sat），某天有演出显示小标记/价格
-//
-//Spending Overview（可选）：本月花费柱状/统计
-//
-//Upcoming Shows：近期条目列表（名称/日期/时间/剧院/标签：booked/past）
-
-
 package com.example.cs501_fp.ui.pages.calendar
 
 import android.os.Build
@@ -21,94 +12,120 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import com.example.cs501_fp.data.local.entity.UserEvent
+import com.example.cs501_fp.viewmodel.CalendarViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.util.Locale
-
-/** 数据模型：一次演出/事件 */
-data class ShowEvent(
-    val id: String,
-    val title: String,
-    val date: LocalDate,
-    val venue: String,
-    val price: Double
-)
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CalendarScreen(
-    modifier: Modifier = Modifier,
-    initialMonth: YearMonth = YearMonth.now(),
-    events: List<ShowEvent> = emptyList(),
-    onAddEvent: () -> Unit = {},
-    onSelectDay: (LocalDate) -> Unit = {}
+    viewModel: CalendarViewModel,
+    navController: NavHostController,
+    modifier: Modifier = Modifier
 ) {
-    var currentMonth by remember { mutableStateOf(initialMonth) }
-    val today = LocalDate.now()
+    val context = LocalContext.current
+    val events by viewModel.events.collectAsState(initial = emptyList())
 
-    val monthEvents = remember(currentMonth, events) {
-        events.filter { YearMonth.from(it.date) == currentMonth }
+    val today = LocalDate.now()
+    val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+
+    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
+
+    // 转换成 Pair<Event, parsedLocalDate>
+    val eventsWithParsed = remember(events) {
+        events.mapNotNull { e ->
+            try {
+                e to LocalDate.parse(e.dateText, formatter)
+            } catch (_: Exception) {
+                null
+            }
+        }
     }
-    val monthSpend = monthEvents.sumOf { it.price }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("My Calendar") },
                 actions = {
-                    TextButton(onClick = onAddEvent) { Text("Add Event") }
+                    TextButton(onClick = { navController.navigate("add_event") }) {
+                        Text("Add Event")
+                    }
                 }
             )
         }
-    ) { inner ->
+    ) { innerPadding ->
         Column(
             modifier
-                .padding(inner)
+                .padding(innerPadding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 月份标题 + 左右切换
+
             MonthHeader(
                 month = currentMonth,
                 onPrev = { currentMonth = currentMonth.minusMonths(1) },
                 onNext = { currentMonth = currentMonth.plusMonths(1) }
             )
 
-            // 星期标题
             WeekdayHeader()
 
-            // 月视图网格
             MonthGrid(
                 month = currentMonth,
                 today = today,
-                events = events,
-                onDayClick = { onSelectDay(it) }
+                events = eventsWithParsed,
+                onDayClick = { dateClicked ->
+                    val eventsToday = eventsWithParsed
+                        .filter { it.second == dateClicked }
+                        .map { it.first }
+
+                    when (eventsToday.size) {
+                        0 -> {android.widget.Toast.makeText(context, "No events on ${dateClicked}", android.widget.Toast.LENGTH_SHORT).show() }
+                        1 -> navController.navigate("event_detail/${eventsToday[0].id}")
+                        else -> {
+                            navController.navigate("events_on_day/${dateClicked}")
+                        }
+                    }
+                }
             )
 
-            // 本月花费统计
-            SpendingOverviewCard(
-                monthTotal = monthSpend,
-                count = monthEvents.size
-            )
+            val monthEvents = eventsWithParsed.filter {
+                YearMonth.from(it.second) == currentMonth
+            }.map { it.first }
 
-            // 即将到来的演出
+            val monthSpend = monthEvents.sumOf { it.price }
+
+            SpendingOverviewCard(monthSpend, monthEvents.size)
+
             Text("Upcoming Shows", style = MaterialTheme.typography.titleMedium)
+
             UpcomingList(
-                items = events.filter { it.date >= today }.sortedBy { it.date }.take(6)
+                items = eventsWithParsed
+                    .filter { it.second >= today }
+                    .sortedBy { it.second }
+                    .take(6)
+                    .map { it.first },
+                onEventClick = { event ->
+                    navController.navigate("event_detail/${event.id}")
+                }
             )
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
+
+/* ----------------------- Month Header ----------------------- */
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -128,16 +145,17 @@ private fun MonthHeader(month: YearMonth, onPrev: () -> Unit, onNext: () -> Unit
     }
 }
 
+/* ----------------------- Weekday Header ----------------------- */
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeekdayHeader() {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        // 以周日为一周起始
-        val days = listOf(
-            DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
-            DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY
-        )
-        days.forEach {
+        listOf(
+            DayOfWeek.SUNDAY, DayOfWeek.MONDAY, DayOfWeek.TUESDAY,
+            DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY,
+            DayOfWeek.FRIDAY, DayOfWeek.SATURDAY
+        ).forEach {
             Text(
                 text = it.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
                 modifier = Modifier.weight(1f),
@@ -148,41 +166,35 @@ private fun WeekdayHeader() {
     }
 }
 
+/* ----------------------- Month Grid ----------------------- */
+
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun MonthGrid(
     month: YearMonth,
     today: LocalDate,
-    events: List<ShowEvent>,
+    events: List<Pair<UserEvent, LocalDate>>,
     onDayClick: (LocalDate) -> Unit
 ) {
-    val firstOfMonth = month.atDay(1)
-    val firstWeekdayIndex = ((firstOfMonth.dayOfWeek.value) % 7) // 将周日置为0
-    val daysInMonth = month.lengthOfMonth()
+    val firstDay = month.atDay(1)
+    val startIndex = firstDay.dayOfWeek.value % 7
 
-    // 生成 6 周 × 7 天 = 42 个格子，包含跨月补齐
-    val cells = (0 until 42).map { index ->
-        val dayOffset = index - firstWeekdayIndex
-        firstOfMonth.plusDays(dayOffset.toLong())
-    }
+    val days = (0 until 42).map { firstDay.plusDays((it - startIndex).toLong()) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        cells.chunked(7).forEach { week ->
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                week.forEach { date ->
-                    val inThisMonth = YearMonth.from(date) == month
-                    val isToday = date == today
-                    val hasEvent = events.any { it.date == date }
+        days.chunked(7).forEach { week ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                week.forEach { dateInfo ->
+                    val inMonth = YearMonth.from(dateInfo) == month
+                    val isToday = dateInfo == today
+                    val hasEvent = events.any { it.second == dateInfo }
 
                     DayCell(
-                        date = date,
-                        enabled = inThisMonth,
+                        date = dateInfo,
+                        enabled = inMonth,
                         isToday = isToday,
                         hasEvent = hasEvent,
-                        onClick = { if (inThisMonth) onDayClick(date) },
+                        onClick = { if (inMonth) onDayClick(dateInfo) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -199,29 +211,27 @@ private fun DayCell(
     isToday: Boolean,
     hasEvent: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier
 ) {
-    val textColor = if (enabled) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
-    }
+    val textColor =
+        if (enabled) MaterialTheme.colorScheme.onSurface
+        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
 
     ElevatedButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier.height(50.dp),
-        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 2.dp)
+        contentPadding = PaddingValues(0.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            // 日期号
+
             Text(
-                text = date.dayOfMonth.toString(),
+                date.dayOfMonth.toString(),
                 color = textColor,
                 style = if (isToday) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
-                fontWeight = if (isToday) FontWeight.SemiBold else FontWeight.Normal
+                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
             )
-            // 演出打点
+
             if (hasEvent) {
                 Spacer(Modifier.height(4.dp))
                 Box(
@@ -235,8 +245,10 @@ private fun DayCell(
     }
 }
 
+/* ----------------------- Spending Overview ----------------------- */
+
 @Composable
-private fun SpendingOverviewCard(monthTotal: Double, count: Int) {
+private fun SpendingOverviewCard(total: Double, count: Int) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Row(
             Modifier.padding(16.dp),
@@ -245,61 +257,49 @@ private fun SpendingOverviewCard(monthTotal: Double, count: Int) {
             Column {
                 Text("This Month", style = MaterialTheme.typography.labelMedium)
                 Text(
-                    "Total \$${"%.2f".format(monthTotal)}",
+                    "Total \$${"%.2f".format(total)}",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("Shows", style = MaterialTheme.typography.labelMedium)
-                Text(count.toString(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(
+                    count.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
 
+/* ----------------------- Upcoming List ----------------------- */
+
 @Composable
-private fun UpcomingList(items: List<ShowEvent>) {
+private fun UpcomingList(
+    items: List<UserEvent>,
+    onEventClick: (UserEvent) -> Unit
+) {
     if (items.isEmpty()) {
         Text("No upcoming shows yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         return
     }
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items.forEach { s ->
-            ElevatedCard(Modifier.fillMaxWidth()) {
-                Row(
-                    Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+        items.forEach { e ->
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onEventClick(e) }
+            ) {
+                Row(Modifier.padding(12.dp)) {
                     Column(Modifier.weight(1f)) {
-                        Text(s.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                        Text("${s.date} • ${s.venue}", style = MaterialTheme.typography.bodySmall)
+                        Text(e.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text("${e.dateText} • ${e.timeText} • ${e.venue}", style = MaterialTheme.typography.bodySmall)
                     }
-                    Text("\$${"%.0f".format(s.price)}", style = MaterialTheme.typography.bodyMedium)
+                    Text("\$${"%.0f".format(e.price)}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
-    }
-}
-
-/* ------------------------- Preview & 假数据 ------------------------- */
-
-@RequiresApi(Build.VERSION_CODES.O)
-private val previewEvents = listOf(
-    ShowEvent("1", "Hamilton", LocalDate.now().withDayOfMonth(8), "Richard Rodgers Theatre", 125.0),
-    ShowEvent("2", "Wicked", LocalDate.now().withDayOfMonth(7), "Gershwin Theatre", 85.0),
-    ShowEvent("3", "The Lion King", LocalDate.now().plusDays(10), "Minskoff Theatre", 79.0)
-)
-
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true, backgroundColor = 0xFFFFFF)
-@Composable
-private fun CalendarScreenPreview() {
-    MaterialTheme {
-        CalendarScreen(
-            events = previewEvents,
-            onAddEvent = {},
-            onSelectDay = {}
-        )
     }
 }
