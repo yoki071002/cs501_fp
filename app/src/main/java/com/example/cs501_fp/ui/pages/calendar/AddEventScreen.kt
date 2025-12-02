@@ -61,6 +61,7 @@ fun AddEventScreen(
     var seat by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
     var officialImageUrl by remember { mutableStateOf<String?>(null) }
+    var tmId by remember { mutableStateOf<String?>(null) }
     val tempPhotoUris = remember { mutableStateListOf<Uri>() }
     val tempBitmaps = remember { mutableStateListOf<Bitmap>() }
 
@@ -100,7 +101,9 @@ fun AddEventScreen(
                 seat = seat,
                 price = price.toDoubleOrNull() ?: 0.0,
                 officialImageUrl = officialImageUrl,
-                userImageUris = savedPaths
+                userImageUris = savedPaths,
+                ticketmasterId = tmId,
+                isPublic = false
             )
         )
     }
@@ -214,6 +217,7 @@ fun AddEventScreen(
                                         event.dates?.start?.localDate?.let { dateText = it }
                                         event.dates?.start?.localTime?.let { timeText = it.take(5) }
                                         officialImageUrl = event.images?.firstOrNull()?.url
+                                        tmId = event.id
                                         viewModel.clearSearchResults()
                                     }
                                 )

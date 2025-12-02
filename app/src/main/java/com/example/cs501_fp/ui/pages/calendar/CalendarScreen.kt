@@ -6,7 +6,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,6 +41,7 @@ fun CalendarScreen(
 ) {
     val context = LocalContext.current
     val events by viewModel.events.collectAsState(initial = emptyList())
+    val headcounts by viewModel.headcounts.collectAsState()
 
     val today = LocalDate.now()
     val formatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -52,6 +58,20 @@ fun CalendarScreen(
         }
     }
 
+    val upcomingEvents = remember(eventsWithParsed) {
+        eventsWithParsed
+            .filter { it.second >= today }
+            .sortedBy { it.second }
+            .take(6)
+            .map { it.first }
+    }
+
+    LaunchedEffect(upcomingEvents) {
+        if (upcomingEvents.isNotEmpty()) {
+            viewModel.fetchUpcomingHeadcounts(upcomingEvents)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -59,6 +79,9 @@ fun CalendarScreen(
                 actions = {
                     TextButton(onClick = { navController.navigate("add_event") }) {
                         Text("Add Event")
+                    }
+                    IconButton(onClick = { navController.navigate("profile") }) {
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                     }
                 }
             )
@@ -91,7 +114,9 @@ fun CalendarScreen(
                         .map { it.first }
 
                     when (eventsToday.size) {
-                        0 -> {android.widget.Toast.makeText(context, "No events on ${dateClicked}", android.widget.Toast.LENGTH_SHORT).show() }
+                        0 -> {
+                            android.widget.Toast.makeText(context, "No events on $dateClicked", android.widget.Toast.LENGTH_SHORT).show()
+                        }
                         1 -> navController.navigate("event_detail/${eventsToday[0].id}")
                         else -> {
                             navController.navigate("events_on_day/${dateClicked}")
@@ -104,11 +129,8 @@ fun CalendarScreen(
             Text("Upcoming Shows", style = MaterialTheme.typography.titleMedium)
 
             UpcomingList(
-                items = eventsWithParsed
-                    .filter { it.second >= today }
-                    .sortedBy { it.second }
-                    .take(6)
-                    .map { it.first },
+                items = upcomingEvents,
+                headcounts = headcounts,
                 onEventClick = { event ->
                     navController.navigate("event_detail/${event.id}")
                 }
@@ -242,6 +264,7 @@ private fun DayCell(
 @Composable
 private fun UpcomingList(
     items: List<UserEvent>,
+    headcounts: Map<String, Long>,
     onEventClick: (UserEvent) -> Unit
 ) {
     if (items.isEmpty()) {
@@ -251,6 +274,8 @@ private fun UpcomingList(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEach { e ->
+            val othersCount = headcounts[e.id] ?: 0L
+
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onEventClick(e) }
@@ -259,6 +284,25 @@ private fun UpcomingList(
                     Column(Modifier.weight(1f)) {
                         Text(e.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                         Text("${e.dateText} • ${e.timeText} • ${e.venue}", style = MaterialTheme.typography.bodySmall)
+
+                        if (othersCount > 0) {
+                            Spacer(Modifier.height(4.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Filled.Groups,
+                                    contentDescription = "Others going",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = "$othersCount others going!",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                     Text("\$${"%.0f".format(e.price)}", style = MaterialTheme.typography.bodyMedium)
                 }
