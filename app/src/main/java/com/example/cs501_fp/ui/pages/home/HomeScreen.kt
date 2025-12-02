@@ -55,7 +55,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("MusicNY") },
+                title = { Text("OnCore") },
                 actions = {
                     IconButton(onClick = onProfileClick) {
                         Icon(Icons.Default.AccountCircle, "Profile")
