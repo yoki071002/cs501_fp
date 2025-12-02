@@ -42,7 +42,6 @@ fun CalendarScreen(
 
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
 
-    // 转换成 Pair<Event, parsedLocalDate>
     val eventsWithParsed = remember(events) {
         events.mapNotNull { e ->
             try {
@@ -101,14 +100,7 @@ fun CalendarScreen(
                 }
             )
 
-            val monthEvents = eventsWithParsed.filter {
-                YearMonth.from(it.second) == currentMonth
-            }.map { it.first }
-
-            val monthSpend = monthEvents.sumOf { it.price }
-
-            SpendingOverviewCard(monthSpend, monthEvents.size)
-
+            Spacer(Modifier.height(8.dp))
             Text("Upcoming Shows", style = MaterialTheme.typography.titleMedium)
 
             UpcomingList(
@@ -239,35 +231,6 @@ private fun DayCell(
                         .size(6.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
-                )
-            }
-        }
-    }
-}
-
-/* ----------------------- Spending Overview ----------------------- */
-
-@Composable
-private fun SpendingOverviewCard(total: Double, count: Int) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text("This Month", style = MaterialTheme.typography.labelMedium)
-                Text(
-                    "Total \$${"%.2f".format(total)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text("Shows", style = MaterialTheme.typography.labelMedium)
-                Text(
-                    count.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
                 )
             }
         }
