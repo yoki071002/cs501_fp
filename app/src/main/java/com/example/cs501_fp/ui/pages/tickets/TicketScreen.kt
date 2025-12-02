@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Savings
@@ -64,7 +65,8 @@ import java.io.File
 @Composable
 fun TicketScreen(
     calendarViewModel: CalendarViewModel = viewModel(),
-    analyticsViewModel: AnalyticsViewModel = viewModel()
+    analyticsViewModel: AnalyticsViewModel = viewModel(),
+    onProfileClick: () -> Unit
 ) {
     // 0 = ticket wallet, 1 = Analytics
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -72,7 +74,14 @@ fun TicketScreen(
     Scaffold(
         topBar = {
             Column {
-                CenterAlignedTopAppBar(title = { Text("Ticket Wallet") })
+                CenterAlignedTopAppBar(
+                    title = { Text("Ticket Wallet") },
+                    actions = {
+                        IconButton(onClick = onProfileClick) {
+                            Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                        }
+                    }
+                )
                 TicketToggle(
                     selectedIndex = selectedTabIndex,
                     onSelect = { selectedTabIndex = it }
@@ -604,8 +613,11 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
 /** ------------------------ Back Side (Details & Notes) ------------------------ */
 @Composable
 fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
+    val context = LocalContext.current
+
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditNotesDialog by remember { mutableStateOf(false) }
+    var showPublishDialog by remember { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -627,6 +639,29 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                 viewModel.updateEvent(event.copy(notes = newNotes))
                 showEditNotesDialog = false
             }
+        )
+    }
+
+    if (showPublishDialog) {
+        AlertDialog(
+            onDismissRequest = { showPublishDialog = false },
+            title = { Text(if (event.isPublic) "Make Private?" else "Post to Community?") },
+            text = {
+                Text(if (event.isPublic)
+                    "This will remove the review from the public feed."
+                else "This will share your ticket and notes to the Community feed. Your exact seat number will be hidden.")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val newStatus = !event.isPublic
+                    viewModel.updateEvent(event.copy(isPublic = newStatus))
+                    showPublishDialog = false
+                    Toast.makeText(context, if(newStatus) "Posted!" else "Hidden!", Toast.LENGTH_SHORT).show()
+                }) {
+                    Text(if (event.isPublic) "Make Private" else "Post")
+                }
+            },
+            dismissButton = { TextButton(onClick = { showPublishDialog = false }) { Text("Cancel") } }
         )
     }
 
@@ -682,12 +717,22 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("My Repo / Notes", style = MaterialTheme.typography.labelLarge)
-                IconButton(onClick = { showEditNotesDialog = true }, modifier = Modifier.size(24.dp)) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Notes",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+
+                Row {
+                    IconButton(onClick = { showPublishDialog = true }) {
+                        Icon(
+                            imageVector = if (event.isPublic) Icons.Default.Public else Icons.Default.PublicOff,
+                            contentDescription = "Post to Community",
+                            tint = if (event.isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = { showEditNotesDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Notes",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

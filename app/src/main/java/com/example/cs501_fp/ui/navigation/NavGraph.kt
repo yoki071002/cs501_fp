@@ -10,6 +10,9 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Theaters
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.AccountCircle
+import com.example.cs501_fp.ui.pages.community.CommunityScreen
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -42,9 +45,9 @@ fun NavGraph(
     /** ----------- Bottom Navigation Items ----------- */
     val items = listOf(
         NavItem("Home", Icons.Filled.Home, "home"),
-        NavItem("My Calendar", Icons.Filled.DateRange, "calendar"),
-        NavItem("Tickets", Icons.Filled.Theaters, "tickets"),
-        NavItem("Profile", Icons.Filled.Person, "profile")
+        NavItem("Calendar", Icons.Filled.DateRange, "calendar"),
+        NavItem("Community", Icons.Filled.Forum, "community"),
+        NavItem("Tickets", Icons.Filled.Theaters, "tickets")
     )
 
     /** ----------- ViewModels ----------- */
@@ -94,9 +97,8 @@ fun NavGraph(
             composable("home") {
                 HomeScreen(
                     viewModel = homeVM,
-                    onShowClick = { show ->
-                        navController.navigate("detail/${show.id}")
-                    }
+                    onShowClick = { show -> navController.navigate("detail/${show.id}") },
+                    onProfileClick = { navController.navigate("profile") }
                 )
             }
 
@@ -146,7 +148,12 @@ fun NavGraph(
 
             /** ---------------- TICKETS ---------------- */
             composable("tickets") {
-                TicketScreen()
+                TicketScreen(onProfileClick = { navController.navigate("profile") })
+            }
+
+            /** ---------------- COMMUNITY ---------------- */
+            composable("community") {
+                CommunityScreen(onProfileClick = { navController.navigate("profile") })
             }
 
             /** ---------------- PROFILE ---------------- */

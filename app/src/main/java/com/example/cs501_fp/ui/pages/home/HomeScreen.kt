@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -38,6 +39,7 @@ import java.time.format.DateTimeFormatter
 fun HomeScreen(
     viewModel: HomeViewModel,
     onShowClick: (ShowSummary) -> Unit = {},
+    onProfileClick: () -> Unit
 ) {
     val dailyPick by viewModel.dailyPick.collectAsState()
     val showsByDay by viewModel.showsThisWeek.collectAsState()
@@ -51,7 +53,16 @@ fun HomeScreen(
     }
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("MusicNY") }) }
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("MusicNY") },
+                actions = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(Icons.Default.AccountCircle, "Profile")
+                    }
+                }
+            )
+        }
     ) { inner ->
         LazyColumn(
             modifier = Modifier

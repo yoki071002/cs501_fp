@@ -137,7 +137,9 @@ fun ShowDetailScreen(
                                 seat = finalSeat,
                                 price = finalPrice,
                                 officialImageUrl = finalImageUrl,
-                                userImageUris = emptyList()
+                                userImageUris = emptyList(),
+                                ticketmasterId = s.id,
+                                isPublic = false
                             )
 
                             val newTimeMin = parseTime(newEvent.timeText)

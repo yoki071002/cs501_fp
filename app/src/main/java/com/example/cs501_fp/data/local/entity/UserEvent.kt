@@ -17,5 +17,8 @@ data class UserEvent(
     val price: Double,
     val officialImageUrl: String? = null,
     val userImageUris: List<String> = emptyList(),
-    val notes: String = ""
+    val notes: String = "",
+
+    val ticketmasterId: String? = null,
+    val isPublic: Boolean = false
 )

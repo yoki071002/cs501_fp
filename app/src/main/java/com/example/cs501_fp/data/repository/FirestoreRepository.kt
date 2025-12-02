@@ -1,10 +1,13 @@
 package com.example.cs501_fp.data.repository
 
+import android.util.Log
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.data.local.entity.Experience
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.AggregateSource
 import kotlinx.coroutines.tasks.await
 
 class FirestoreRepository {
@@ -49,6 +52,53 @@ class FirestoreRepository {
             .toObjects(UserEvent::class.java)
     }
 
+
+    /* --------------------------------------------------------
+     *                     COMMUNITY FEATURES (NEW)
+     * -------------------------------------------------------- */
+
+    /** 更新公开状态 */
+    suspend fun togglePublicStatus(eventId: String, isPublic: Boolean) {
+        val doc = userDoc() ?: return
+        doc.collection("events")
+            .document(eventId)
+            .update("isPublic", isPublic)
+    }
+
+    /** 获取社区所有公开帖子 */
+    suspend fun getPublicEvents(): List<UserEvent> {
+        return try {
+            db.collectionGroup("events")
+                .whereEqualTo("isPublic", true)
+                .orderBy("dateText", Query.Direction.DESCENDING)
+                .limit(50)
+                .get()
+                .await()
+                .toObjects(UserEvent::class.java)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Error fetching public events", e)
+            emptyList()
+        }
+    }
+
+    /**
+     * 查询某场演出（特定 ID + 特定日期）有多少人要去。
+     */
+    suspend fun getHeadcount(tmId: String, dateText: String): Long {
+        if (tmId.isBlank()) return 0
+        return try {
+            val snapshot = db.collectionGroup("events")
+                .whereEqualTo("ticketmasterId", tmId)
+                .whereEqualTo("dateText", dateText)
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+            snapshot.count
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Error counting heads", e)
+            0
+        }
+    }
 
     /* --------------------------------------------------------
      *                     EXPERIENCE CRUD

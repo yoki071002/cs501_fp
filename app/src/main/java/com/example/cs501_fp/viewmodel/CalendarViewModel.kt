@@ -119,4 +119,26 @@ class CalendarViewModel(
             }
         }
     }
+
+    /* ---------------------------------------------------------
+     *                   SOCIAL HEADCOUNTS
+     * --------------------------------------------------------- */
+    private val _headcounts = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val headcounts: StateFlow<Map<String, Long>> = _headcounts
+
+    fun fetchUpcomingHeadcounts(events: List<UserEvent>) {
+        viewModelScope.launch {
+            val newCounts = mutableMapOf<String, Long>()
+            events.forEach { event ->
+                val tmId = event.ticketmasterId
+                if (!tmId.isNullOrBlank()) {
+                    val count = cloudRepo.getHeadcount(tmId, event.dateText)
+                    if (count > 1) {
+                        newCounts[event.id] = count - 1
+                    }
+                }
+            }
+            _headcounts.value = newCounts
+        }
+    }
 }
