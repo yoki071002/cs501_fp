@@ -9,6 +9,9 @@ import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.AggregateSource
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 class FirestoreRepository {
 
@@ -66,19 +69,25 @@ class FirestoreRepository {
     }
 
     /** 获取社区所有公开帖子 */
-    suspend fun getPublicEvents(): List<UserEvent> {
-        return try {
-            db.collectionGroup("events")
-                .whereEqualTo("public", true)
-                .orderBy("dateText", Query.Direction.DESCENDING)
-                .limit(50)
-                .get()
-                .await()
-                .toObjects(UserEvent::class.java)
-        } catch (e: Exception) {
-            Log.e("FirestoreRepo", "Error fetching public events", e)
-            emptyList()
+    fun getPublicEventsFlow(): Flow<List<UserEvent>> = callbackFlow {
+        val query = db.collectionGroup("events")
+            .whereEqualTo("public", true)
+            .orderBy("dateText", Query.Direction.DESCENDING)
+            .limit(50)
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                close(error)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null) {
+                val events = snapshot.toObjects(UserEvent::class.java)
+                trySend(events)
+            }
         }
+
+        awaitClose { listener.remove() }
     }
 
     /**

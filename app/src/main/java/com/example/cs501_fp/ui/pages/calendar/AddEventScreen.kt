@@ -46,6 +46,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
 import kotlin.math.abs
+import androidx.compose.ui.draw.clip
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +83,7 @@ fun AddEventScreen(
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) tempBitmaps.add(bitmap)
     }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -272,6 +274,7 @@ fun AddEventScreen(
 
             Text("Add Photos / Ticket Stubs", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+
                 OutlinedButton(onClick = {
                     val permissionCheck = ContextCompat.checkSelfPermission(
                         context,
@@ -285,6 +288,7 @@ fun AddEventScreen(
                 }) {
                     Icon(Icons.Default.PhotoCamera, null); Spacer(Modifier.width(8.dp)); Text("Camera")
                 }
+
                 OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
                     Icon(Icons.Default.AddPhotoAlternate, null); Spacer(Modifier.width(8.dp)); Text("Gallery")
                 }
@@ -293,10 +297,10 @@ fun AddEventScreen(
             if (tempPhotoUris.isNotEmpty() || tempBitmaps.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tempPhotoUris) { uri ->
-                        AsyncImage(model = uri, contentDescription = null, modifier = Modifier.size(80.dp), contentScale = ContentScale.Crop)
+                        AsyncImage(model = uri, contentDescription = null, modifier = Modifier.size(80.dp).clip(MaterialTheme.shapes.medium), contentScale = ContentScale.Crop)
                     }
                     items(tempBitmaps) { bmp ->
-                        AsyncImage(model = bmp, contentDescription = null, modifier = Modifier.size(80.dp), contentScale = ContentScale.Crop)
+                        AsyncImage(model = bmp, contentDescription = null, modifier = Modifier.size(80.dp).clip(MaterialTheme.shapes.medium), contentScale = ContentScale.Crop)
                     }
                 }
             }

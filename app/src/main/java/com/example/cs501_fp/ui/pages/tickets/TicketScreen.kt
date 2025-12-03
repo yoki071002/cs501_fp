@@ -1,5 +1,7 @@
 package com.example.cs501_fp.ui.pages.tickets
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -48,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.cs501_fp.data.local.entity.UserEvent
@@ -500,6 +503,7 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var showGalleryDialog by remember { mutableStateOf(false) }
     val bgImage = event.officialImageUrl ?: event.userImageUris.firstOrNull()
+
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
             saveBitmapToInternalStorage(context, bitmap)?.let { path ->
@@ -509,6 +513,17 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
             }
         }
     }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            cameraLauncher.launch(null)
+        } else {
+            Toast.makeText(context, "Camera permission is required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             saveUriToInternalStorage(context, uri)?.let { path ->
@@ -526,7 +541,19 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
             confirmButton = {},
             dismissButton = {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    TextButton(onClick = { showImageSourceDialog = false; cameraLauncher.launch(null) }) { Text("Camera") }
+                    TextButton(onClick = {
+                        showImageSourceDialog = false
+                        val permissionCheck = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        )
+                        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                            cameraLauncher.launch(null)
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    }) { Text("Camera") }
+
                     TextButton(onClick = { showImageSourceDialog = false; galleryLauncher.launch("image/*") }) { Text("Gallery") }
                     TextButton(onClick = { showImageSourceDialog = false }) { Text("Cancel") }
                 }
