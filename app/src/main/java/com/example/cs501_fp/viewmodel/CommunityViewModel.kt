@@ -20,10 +20,10 @@ class CommunityViewModel : ViewModel() {
     private var allPostsCache = emptyList<UserEvent>()
 
     init {
-        listenToRealtimeUpdates()
+        fetchPosts()
     }
 
-    private fun listenToRealtimeUpdates() {
+    private fun fetchPosts() {
         viewModelScope.launch {
             _isLoading.value = true
 

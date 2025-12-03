@@ -23,6 +23,8 @@ class CalendarViewModel(
      *                   INIT DATABASE & REPOSITORY
      * --------------------------------------------------------- */
     private val database = AppDatabase.getInstance(application)
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     private val localRepo = LocalRepository(
         userEventDao = database.userEventDao(),
@@ -111,21 +113,30 @@ class CalendarViewModel(
     /* ---------------------------------------------------------
      *              SYNC CLOUD → LOCAL
      * --------------------------------------------------------- */
-    fun syncFromCloud() {viewModelScope.launch {
-        val user = FirebaseAuth.getInstance().currentUser ?: return@launch
-        Log.d("Sync", "Starting sync from cloud for user ${user.uid}")
+    fun syncFromCloud() {
+        viewModelScope.launch {
+            val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+            _isLoading.value = true
+            Log.d("Sync", "Starting sync from cloud for user ${user.uid}")
 
-        val cloudEvents = cloudRepo.getAllEvents()
-        Log.d("Sync", "Found ${cloudEvents.size} events in cloud.")
+            try {
+                val cloudEvents = cloudRepo.getAllEvents()
+                Log.d("Sync", "Found ${cloudEvents.size} events in cloud.")
 
-        if (cloudEvents.isNotEmpty()) {
-            localRepo.deleteAllEvents()
-            cloudEvents.forEach { event ->
-                localRepo.addEvent(event)
+                if (cloudEvents.isNotEmpty()) {
+                    localRepo.deleteAllEvents()
+                    cloudEvents.forEach { event ->
+                        localRepo.addEvent(event)
+                    }
+                    Log.d("Sync", "Finished syncing to local database.")
+                }
+            } catch (e: Exception) {
+                Log.e("Sync", "Error during sync", e)
+            } finally {
+                _isLoading.value = false
+                Log.d("Sync", "Sync process finished.")
             }
-            Log.d("Sync", "Finished syncing to local database.")
         }
-    }
     }
 
 

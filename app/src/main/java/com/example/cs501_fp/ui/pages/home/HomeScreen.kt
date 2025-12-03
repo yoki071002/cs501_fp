@@ -45,6 +45,8 @@ fun HomeScreen(
     val showsByDay by viewModel.showsThisWeek.collectAsState()
     val isPrevWeekEnabled by viewModel.isPrevWeekEnabled.collectAsState()
     val isPlaying by viewModel.isPlaying.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val context = LocalContext.current
 
     val sortedDays = showsByDay.keys.sorted()
 
@@ -73,15 +75,18 @@ fun HomeScreen(
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
             item {
-                val context = LocalContext.current
-                dailyPick?.let { pick ->
-                    DailyPickBanner(
-                        pick = pick,
-                        isPlaying = isPlaying,
-                        onListenClick = {
-                            viewModel.togglePlayPreview(context, pick.id)
-                        }
-                    )
+                if (isLoading) {
+                    LoadingBannerPlaceholder()
+                } else {
+                    dailyPick?.let { pick ->
+                        DailyPickBanner(
+                            pick = pick,
+                            isPlaying = isPlaying,
+                            onListenClick = {
+                                viewModel.togglePlayPreview(context, pick.id)
+                            }
+                        )
+                    }
                 }
             }
 
@@ -94,7 +99,13 @@ fun HomeScreen(
                 )
             }
 
-            if (showsByDay.isEmpty()) {
+            if (isLoading) {
+                item {
+                    Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
+            } else if (showsByDay.isEmpty()) {
                 item {
                     Text(
                         "No shows found for this week.",
@@ -136,6 +147,24 @@ fun HomeScreen(
 }
 
 /* ----------------------------- Components ----------------------------- */
+
+@Composable
+fun LoadingBannerPlaceholder() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
+            Spacer(Modifier.height(8.dp))
+            Text("Loading Daily Pick...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)

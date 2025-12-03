@@ -13,6 +13,7 @@ import com.example.cs501_fp.data.repository.TicketmasterRepository
 import com.example.cs501_fp.ui.pages.home.ShowSummary
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -42,6 +43,9 @@ class HomeViewModel : ViewModel() {
 
     private val _currentWeekStart = MutableStateFlow(startOfCurrentActualWeek)
     val currentWeekStart: StateFlow<LocalDate> = _currentWeekStart
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     init {
         loadData()
@@ -136,8 +140,16 @@ class HomeViewModel : ViewModel() {
     }
 
     fun loadData() {
-        loadDailyPick()
-        loadShowsThisWeek()
+        viewModelScope.launch {
+            _isLoading.value = true
+
+            val job1 = launch { loadDailyPick() }
+            val job2 = launch { loadShowsThisWeek() }
+
+            joinAll(job1, job2)
+
+            _isLoading.value = false
+        }
     }
 
     private fun updatePrevWeekButtonState() {

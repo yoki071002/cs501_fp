@@ -42,6 +42,7 @@ fun CalendarScreen(
     val context = LocalContext.current
     val events by viewModel.events.collectAsState(initial = emptyList())
     val headcounts by viewModel.headcounts.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     val today = LocalDate.now()
     val formatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -87,54 +88,74 @@ fun CalendarScreen(
             )
         }
     ) { innerPadding ->
-        Column(
-            modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(16.dp))
+                    Text("Syncing with cloud...", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        } else {
+            Column(
+                modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
 
-            MonthHeader(
-                month = currentMonth,
-                onPrev = { currentMonth = currentMonth.minusMonths(1) },
-                onNext = { currentMonth = currentMonth.plusMonths(1) }
-            )
+                MonthHeader(
+                    month = currentMonth,
+                    onPrev = { currentMonth = currentMonth.minusMonths(1) },
+                    onNext = { currentMonth = currentMonth.plusMonths(1) }
+                )
 
-            WeekdayHeader()
+                WeekdayHeader()
 
-            MonthGrid(
-                month = currentMonth,
-                today = today,
-                events = eventsWithParsed,
-                onDayClick = { dateClicked ->
-                    val eventsToday = eventsWithParsed
-                        .filter { it.second == dateClicked }
-                        .map { it.first }
+                MonthGrid(
+                    month = currentMonth,
+                    today = today,
+                    events = eventsWithParsed,
+                    onDayClick = { dateClicked ->
+                        val eventsToday = eventsWithParsed
+                            .filter { it.second == dateClicked }
+                            .map { it.first }
 
-                    when (eventsToday.size) {
-                        0 -> {
-                            android.widget.Toast.makeText(context, "No events on $dateClicked", android.widget.Toast.LENGTH_SHORT).show()
-                        }
-                        1 -> navController.navigate("event_detail/${eventsToday[0].id}")
-                        else -> {
-                            navController.navigate("events_on_day/${dateClicked}")
+                        when (eventsToday.size) {
+                            0 -> {
+                                android.widget.Toast.makeText(
+                                    context,
+                                    "No events on $dateClicked",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
+                            1 -> navController.navigate("event_detail/${eventsToday[0].id}")
+                            else -> {
+                                navController.navigate("events_on_day/${dateClicked}")
+                            }
                         }
                     }
-                }
-            )
+                )
 
-            Spacer(Modifier.height(8.dp))
-            Text("Upcoming Shows", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(8.dp))
+                Text("Upcoming Shows", style = MaterialTheme.typography.titleMedium)
 
-            UpcomingList(
-                items = upcomingEvents,
-                headcounts = headcounts,
-                onEventClick = { event ->
-                    navController.navigate("event_detail/${event.id}")
-                }
-            )
+                UpcomingList(
+                    items = upcomingEvents,
+                    headcounts = headcounts,
+                    onEventClick = { event ->
+                        navController.navigate("event_detail/${event.id}")
+                    }
+                )
+            }
         }
     }
 }
