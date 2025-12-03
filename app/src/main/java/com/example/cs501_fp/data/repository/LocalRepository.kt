@@ -43,4 +43,6 @@ class LocalRepository(
     /** 本地删除 Experience */
     suspend fun deleteExperience(exp: Experience) =
         experienceDao.deleteExperience(exp)
+
+    suspend fun deleteAllEvents() = userEventDao.deleteAllEvents()
 }

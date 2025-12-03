@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import com.example.cs501_fp.ui.pages.community.CommunityScreen
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -67,11 +68,11 @@ fun NavGraph(
                     currentDestination = currentRoute,
                     onItemClick = { route ->
                         navController.navigate(route) {
-                            launchSingleTop = true
-                            restoreState = true
                             popUpTo("home") {
-                                saveState = true
+                                saveState = false
                             }
+                            launchSingleTop = true
+                            restoreState = false
                         }
                     }
                 )
@@ -95,6 +96,13 @@ fun NavGraph(
 
             /** ---------------- HOME ---------------- */
             composable("home") {
+                LaunchedEffect(Unit) {
+                    val user = FirebaseAuth.getInstance().currentUser
+                    if (user != null) {
+                        calendarVM.syncFromCloud()
+                    }
+                }
+
                 HomeScreen(
                     viewModel = homeVM,
                     onShowClick = { show -> navController.navigate("detail/${show.id}") },

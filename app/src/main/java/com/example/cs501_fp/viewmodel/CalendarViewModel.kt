@@ -111,19 +111,23 @@ class CalendarViewModel(
     /* ---------------------------------------------------------
      *              SYNC CLOUD → LOCAL
      * --------------------------------------------------------- */
-    fun syncFromCloud() {
-        viewModelScope.launch {
-            val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+    fun syncFromCloud() {viewModelScope.launch {
+        val user = FirebaseAuth.getInstance().currentUser ?: return@launch
+        Log.d("Sync", "Starting sync from cloud for user ${user.uid}")
 
-            // 获取 Firestore 所有事件
-            val cloudEvents = cloudRepo.getAllEvents()
+        val cloudEvents = cloudRepo.getAllEvents()
+        Log.d("Sync", "Found ${cloudEvents.size} events in cloud.")
 
-            // 覆盖本地（先删再加，或者你也可以更 smart diff）
-            cloudEvents.forEach { e ->
-                localRepo.addEvent(e)
+        if (cloudEvents.isNotEmpty()) {
+            localRepo.deleteAllEvents()
+            cloudEvents.forEach { event ->
+                localRepo.addEvent(event)
             }
+            Log.d("Sync", "Finished syncing to local database.")
         }
     }
+    }
+
 
     /* ---------------------------------------------------------
      *                   SOCIAL HEADCOUNTS

@@ -18,4 +18,8 @@ interface UserEventDao {
 
     @Delete
     suspend fun deleteEvent(event: UserEvent)
+
+    @Query("DELETE FROM user_events")
+    suspend fun deleteAllEvents()
 }
+
