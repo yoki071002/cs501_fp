@@ -1,6 +1,7 @@
 package com.example.cs501_fp.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cs501_fp.data.local.AppDatabase
@@ -98,13 +99,17 @@ class CalendarViewModel(
 
             // 2. Cloud
             FirebaseAuth.getInstance().currentUser?.let {
-                cloudRepo.deleteEvent(event.id)
+                try {
+                    cloudRepo.deleteEvent(event.id)
+                } catch (e: Exception) {
+                    Log.e("CalendarViewModel", "Failed to delete event from cloud: ${event.id}", e)
+                }
             }
         }
     }
 
     /* ---------------------------------------------------------
-     *              SYNC CLOUD → LOCAL (optional)
+     *              SYNC CLOUD → LOCAL
      * --------------------------------------------------------- */
     fun syncFromCloud() {
         viewModelScope.launch {
