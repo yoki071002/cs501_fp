@@ -17,29 +17,31 @@ class CommunityViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    private var allPostsCache = emptyList<UserEvent>()
+
     init {
-        loadPublicPosts()
+        listenToRealtimeUpdates()
     }
 
-    fun loadPublicPosts() {
+    private fun listenToRealtimeUpdates() {
         viewModelScope.launch {
             _isLoading.value = true
-            val events = repo.getPublicEvents()
-            _publicPosts.value = events
-            _isLoading.value = false
+
+            repo.getPublicEventsFlow().collect { events ->
+                allPostsCache = events
+                _publicPosts.value = events
+                _isLoading.value = false
+            }
         }
     }
 
     fun searchPosts(query: String) {
-        viewModelScope.launch {
-            val all = repo.getPublicEvents()
-            if (query.isBlank()) {
-                _publicPosts.value = all
-            } else {
-                _publicPosts.value = all.filter {
-                    it.title.contains(query, ignoreCase = true) ||
-                            it.venue.contains(query, ignoreCase = true)
-                }
+        if (query.isBlank()) {
+            _publicPosts.value = allPostsCache
+        } else {
+            _publicPosts.value = allPostsCache.filter {
+                it.title.contains(query, ignoreCase = true) ||
+                        it.venue.contains(query, ignoreCase = true)
             }
         }
     }
