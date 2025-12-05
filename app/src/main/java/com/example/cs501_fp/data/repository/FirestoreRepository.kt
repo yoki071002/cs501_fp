@@ -7,7 +7,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.AggregateSource
+import android.net.Uri
+import com.google.firebase.storage.FirebaseStorage
+import com.example.cs501_fp.data.model.Comment
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +19,7 @@ class FirestoreRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
     /** 获取当前用户 DocumentReference，如果未登录返回 null */
     private fun userDoc(): DocumentReference? {
@@ -138,4 +141,59 @@ class FirestoreRepository {
             .await()
             .toObjects(Experience::class.java)
     }
+
+
+    /* --------------------------------------------------------
+     *                     IMAGE UPLOAD (for community)
+     * -------------------------------------------------------- */
+    suspend fun uploadEventImage(eventId: String, uri: Uri): String? {
+        val uid = auth.currentUser?.uid ?: return null
+        val filename = "${System.currentTimeMillis()}.jpg"
+        val ref = storage.reference.child("event_images/$uid/$eventId/$filename")
+
+        return try {
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Image upload failed", e)
+            null
+        }
+    }
+
+    /* --------------------------------------------------------
+     *                     KUDOS & COMMENTS
+     * -------------------------------------------------------- */
+    suspend fun toggleLike(eventId: String, currentUserId: String) {
+        val docRef = db.collectionGroup("events").whereEqualTo("id", eventId).get().await().documents.firstOrNull()?.reference ?: return
+
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val likedBy = snapshot.get("likedBy") as? List<String> ?: emptyList()
+
+            val newLikedBy = if (likedBy.contains(currentUserId)) {
+                likedBy - currentUserId
+            } else {
+                likedBy + currentUserId
+            }
+            transaction.update(docRef, "likedBy", newLikedBy)
+        }.await()
+    }
+
+    suspend fun addComment(comment: Comment) {
+        db.collection("comments").add(comment).await()
+    }
+
+    fun getCommentsFlow(eventId: String): kotlinx.coroutines.flow.Flow<List<Comment>> = kotlinx.coroutines.flow.callbackFlow {
+        val query = db.collection("comments")
+            .whereEqualTo("eventId", eventId)
+            .orderBy("timestamp", Query.Direction.ASCENDING)
+
+        val listener = query.addSnapshotListener { snapshot, _ ->
+            if (snapshot != null) {
+                trySend(snapshot.toObjects(Comment::class.java))
+            }
+        }
+        awaitClose { listener.remove() }
+    }
+
 }

@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -29,7 +31,6 @@ import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +60,7 @@ import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.AnalyticsViewModel
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.MonthlyStat
+import kotlinx.coroutines.launch
 import java.io.File
 
 /** ------------------------ Ticket Main Screen ------------------------ */
@@ -595,7 +597,11 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (bgImage != null) {
                 AsyncImage(
-                    model = if (bgImage.startsWith("/")) File(bgImage) else bgImage,
+                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                        .data(bgImage)
+                        .crossfade(true)
+                        .size(800, 800)
+                        .build(),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -641,6 +647,8 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
 @Composable
 fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val userProfile by viewModel.currentUserProfile.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditNotesDialog by remember { mutableStateOf(false) }
@@ -680,10 +688,42 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
             },
             confirmButton = {
                 Button(onClick = {
-                    val newStatus = !event.isPublic
-                    viewModel.updateEvent(event.copy(isPublic = newStatus))
-                    showPublishDialog = false
-                    Toast.makeText(context, if(newStatus) "Posted!" else "Hidden!", Toast.LENGTH_SHORT).show()
+                    if (event.isPublic) {
+                        viewModel.updateEvent(event.copy(isPublic = false))
+                        showPublishDialog = false
+                        Toast.makeText(context, "Hidden from Community!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        showPublishDialog = false
+
+                        scope.launch {
+                            Toast.makeText(context, "Publishing... Please wait.", Toast.LENGTH_SHORT).show()
+
+                            val uploadedPublicUrls = mutableListOf<String>()
+
+                            event.userImageUris.forEach { uriString ->
+                                val uri = android.net.Uri.parse(uriString)
+                                val cloudUrl = viewModel.uploadImageToCloud(event.id, uri)
+                                if (cloudUrl != null) {
+                                    uploadedPublicUrls.add(cloudUrl)
+                                }
+                            }
+
+                            if (uploadedPublicUrls.isEmpty() && event.officialImageUrl != null) {
+                                uploadedPublicUrls.add(event.officialImageUrl)
+                            }
+
+                            val updatedEvent = event.copy(
+                                isPublic = true,
+                                publicImageUrls = uploadedPublicUrls,
+                                ownerId = userProfile?.uid ?: "",
+                                ownerName = userProfile?.username ?: "Unknown User",
+                                ownerAvatarUrl = userProfile?.avatarUrl
+                            )
+
+                            viewModel.updateEvent(updatedEvent)
+                            Toast.makeText(context, "Success! Posted to Community.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }) {
                     Text(if (event.isPublic) "Make Private" else "Post")
                 }

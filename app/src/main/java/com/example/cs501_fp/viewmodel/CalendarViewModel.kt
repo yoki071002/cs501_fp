@@ -1,18 +1,23 @@
 package com.example.cs501_fp.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cs501_fp.data.local.AppDatabase
 import com.example.cs501_fp.data.local.entity.UserEvent
+import com.example.cs501_fp.data.model.UserProfile
+import com.example.cs501_fp.data.repository.UserRepository
 import com.example.cs501_fp.data.repository.FirestoreRepository
 import com.example.cs501_fp.data.repository.LocalRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.example.cs501_fp.data.model.TicketmasterEvent
 import com.example.cs501_fp.data.repository.TicketmasterRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class CalendarViewModel(
@@ -32,8 +37,8 @@ class CalendarViewModel(
     )
 
     private val cloudRepo = FirestoreRepository()
-
     private val ticketRepo = TicketmasterRepository()
+    private val userRepo = UserRepository()
 
     /* ---------------------------------------------------------
      *                   SEARCH STATE
@@ -58,53 +63,71 @@ class CalendarViewModel(
     }
 
     /* ---------------------------------------------------------
-     *                   FLOW: All Events
+     *                   USER PROFILE STATE
      * --------------------------------------------------------- */
-    val events = localRepo.getAllEvents()
-    val totalSpent = database.userEventDao().getTotalSpent()
+    private val _currentUserProfile = MutableStateFlow<UserProfile?>(null)
+    val currentUserProfile: StateFlow<UserProfile?> = _currentUserProfile
+
+    init {
+        fetchUserProfile()
+    }
+
+    suspend fun uploadImageToCloud(eventId: String, uri: Uri): String? {
+        return cloudRepo.uploadEventImage(eventId, uri)
+    }
+
+    private fun fetchUserProfile() {
+        viewModelScope.launch {
+            _currentUserProfile.value = userRepo.getUserProfile()
+        }
+    }
 
     /* ---------------------------------------------------------
-     *                   ADD EVENT (local + cloud)
+     *                   FLOW: All Events
+     * --------------------------------------------------------- */
+    val events: StateFlow<List<UserEvent>> = localRepo.getAllEvents()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val totalSpent: StateFlow<Double?> = database.userEventDao().getTotalSpent()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0.0
+        )
+
+    /* ---------------------------------------------------------
+     *                   ADD / UPDATE / DELETE
      * --------------------------------------------------------- */
     fun addEvent(event: UserEvent) {
         viewModelScope.launch {
-            // 1. Local DB
             localRepo.addEvent(event)
-
-            // 2. Upload to Firestore (if user logged in)
             FirebaseAuth.getInstance().currentUser?.let {
                 cloudRepo.uploadEvent(event)
             }
         }
     }
 
-    /* ---------------------------------------------------------
-     *                   ADD EVENT (Update photo)
-     * --------------------------------------------------------- */
     fun updateEvent(event: UserEvent) {
         viewModelScope.launch {
             localRepo.addEvent(event)
-
             FirebaseAuth.getInstance().currentUser?.let {
                 cloudRepo.uploadEvent(event)
             }
         }
     }
 
-    /* ---------------------------------------------------------
-     *                   DELETE EVENT (local + cloud)
-     * --------------------------------------------------------- */
     fun deleteEvent(event: UserEvent) {
         viewModelScope.launch {
-            // 1. Local
             localRepo.deleteEvent(event)
-
-            // 2. Cloud
             FirebaseAuth.getInstance().currentUser?.let {
                 try {
                     cloudRepo.deleteEvent(event.id)
                 } catch (e: Exception) {
-                    Log.e("CalendarViewModel", "Failed to delete event from cloud: ${event.id}", e)
+                    Log.e("CalendarVM", "Cloud delete failed", e)
                 }
             }
         }
@@ -117,28 +140,19 @@ class CalendarViewModel(
         viewModelScope.launch {
             val user = FirebaseAuth.getInstance().currentUser ?: return@launch
             _isLoading.value = true
-            Log.d("Sync", "Starting sync from cloud for user ${user.uid}")
-
             try {
                 val cloudEvents = cloudRepo.getAllEvents()
-                Log.d("Sync", "Found ${cloudEvents.size} events in cloud.")
-
                 if (cloudEvents.isNotEmpty()) {
                     localRepo.deleteAllEvents()
-                    cloudEvents.forEach { event ->
-                        localRepo.addEvent(event)
-                    }
-                    Log.d("Sync", "Finished syncing to local database.")
+                    cloudEvents.forEach { localRepo.addEvent(it) }
                 }
             } catch (e: Exception) {
                 Log.e("Sync", "Error during sync", e)
             } finally {
                 _isLoading.value = false
-                Log.d("Sync", "Sync process finished.")
             }
         }
     }
-
 
     /* ---------------------------------------------------------
      *                   SOCIAL HEADCOUNTS
@@ -153,9 +167,7 @@ class CalendarViewModel(
                 val tmId = event.ticketmasterId
                 if (!tmId.isNullOrBlank()) {
                     val count = cloudRepo.getHeadcount(tmId, event.dateText)
-                    if (count > 1) {
-                        newCounts[event.id] = count - 1
-                    }
+                    if (count > 1) newCounts[event.id] = count - 1
                 }
             }
             _headcounts.value = newCounts

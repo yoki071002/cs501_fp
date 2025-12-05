@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +25,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.viewmodel.CommunityViewModel
+import kotlin.text.take
+import kotlin.text.uppercase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +80,7 @@ fun CommunityScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(posts) { post ->
-                        CommunityPostCard(post)
+                        CommunityPostCard(post = post)
                     }
                 }
             }
@@ -88,9 +89,13 @@ fun CommunityScreen(
 }
 
 @Composable
-fun CommunityPostCard(post: UserEvent) {
-    var liked by remember { mutableStateOf(false) }
-    var likeCount by remember { mutableIntStateOf((0..50).random()) }
+fun CommunityPostCard(
+post: UserEvent,
+viewModel: CommunityViewModel = viewModel()
+) {
+    val currentUserId = viewModel.currentUserId
+    val isLiked = post.likedBy.contains(currentUserId)
+    val likeCount = post.likedBy.size
 
     Card(
         elevation = CardDefaults.cardElevation(2.dp),
@@ -98,45 +103,68 @@ fun CommunityPostCard(post: UserEvent) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = post.title.take(1).uppercase(),
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                if (post.ownerAvatarUrl != null) {
+                    AsyncImage(
+                        model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                            .data(post.ownerAvatarUrl)
+                            .crossfade(true)
+                            .size(100, 100)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
                     )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = post.ownerName.take(1).uppercase().ifBlank { "?" },
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Theater Fan", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                    Text("Verified Reviewer", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = post.ownerName.ifBlank { "Anonymous" },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = post.dateText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
             Spacer(Modifier.height(12.dp))
 
             Text(post.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Text("${post.venue} • ${post.dateText}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
+            Text("${post.venue}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.secondary)
 
             Spacer(Modifier.height(8.dp))
 
             if (post.notes.isNotBlank()) {
                 Text(post.notes, style = MaterialTheme.typography.bodyMedium)
-            } else {
-                Text("No written review.", style = MaterialTheme.typography.bodyMedium, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic, color = Color.Gray)
             }
 
             Spacer(Modifier.height(12.dp))
 
-            val displayImage = post.userImageUris.firstOrNull() ?: post.officialImageUrl
+            val displayImage = post.publicImageUrls.firstOrNull() ?: post.officialImageUrl
             if (displayImage != null) {
                 AsyncImage(
-                    model = displayImage,
+                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(displayImage)
+                        .crossfade(true)
+                        .size(600, 400)
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -147,22 +175,23 @@ fun CommunityPostCard(post: UserEvent) {
                 Spacer(Modifier.height(12.dp))
             }
 
-            Divider()
+            HorizontalDivider()
+
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.Start,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TextButton(onClick = {
-                    liked = !liked
-                    if (liked) likeCount++ else likeCount--
-                }) {
+                TextButton(onClick = { viewModel.toggleLike(post) }) {
                     Icon(
-                        if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                        contentDescription = "Helpful"
+                        if (isLiked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                        contentDescription = "Like",
+                        tint = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text(if (likeCount > 0) "$likeCount Helpful" else "Helpful")
+                    Text(if (likeCount > 0) "$likeCount" else "Like")
                 }
             }
         }
