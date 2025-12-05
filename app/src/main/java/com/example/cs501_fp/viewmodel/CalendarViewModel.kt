@@ -19,6 +19,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.withContext
 
 class CalendarViewModel(
     application: Application
@@ -161,14 +165,22 @@ class CalendarViewModel(
     val headcounts: StateFlow<Map<String, Long>> = _headcounts
 
     fun fetchUpcomingHeadcounts(events: List<UserEvent>) {
+        if (events.isEmpty()) return
+
         viewModelScope.launch {
-            val newCounts = mutableMapOf<String, Long>()
-            events.forEach { event ->
-                val tmId = event.ticketmasterId
-                if (!tmId.isNullOrBlank()) {
-                    val count = cloudRepo.getHeadcount(tmId, event.dateText)
-                    if (count > 1) newCounts[event.id] = count - 1
+            val newCounts = withContext(Dispatchers.IO) {
+                val deferredCounts = events.map { event ->
+                    async {
+                        val tmId = event.ticketmasterId
+                        if (!tmId.isNullOrBlank()) {
+                            val count = cloudRepo.getHeadcount(tmId, event.dateText)
+                            if (count > 1) event.id to (count - 1) else null
+                        } else {
+                            null
+                        }
+                    }
                 }
+                deferredCounts.awaitAll().filterNotNull().toMap()
             }
             _headcounts.value = newCounts
         }
