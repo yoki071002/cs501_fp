@@ -22,6 +22,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cs501_fp.ui.components.BottomNavBar
 import com.example.cs501_fp.ui.components.ShowDetailScreen
@@ -33,6 +34,9 @@ import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
 import com.example.cs501_fp.ui.pages.auth.RegisterScreen
+import androidx.compose.runtime.getValue
+import androidx.navigation.compose.currentBackStackEntryAsState
+
 
 data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -57,8 +61,9 @@ fun NavGraph(
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val startDestination = if (currentUser != null) "home" else "login"
-    val currentRoute = navController.currentDestination?.route
-    val showBottomBar = currentRoute != "login"
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute != "login" && currentRoute != "register"
 
     Scaffold(
         bottomBar = {
