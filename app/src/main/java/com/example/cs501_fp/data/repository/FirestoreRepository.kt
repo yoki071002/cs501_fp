@@ -180,17 +180,26 @@ class FirestoreRepository {
     }
 
     suspend fun addComment(comment: Comment) {
-        db.collection("comments").add(comment).await()
+        val newDocRef = db.collection("comments").document()
+        val commentWithId = comment.copy(id = newDocRef.id)
+        newDocRef.set(commentWithId).await()
     }
 
-    fun getCommentsFlow(eventId: String): kotlinx.coroutines.flow.Flow<List<Comment>> = kotlinx.coroutines.flow.callbackFlow {
+    fun getCommentsFlow(eventId: String): Flow<List<Comment>> = callbackFlow {
         val query = db.collection("comments")
             .whereEqualTo("eventId", eventId)
-            .orderBy("timestamp", Query.Direction.ASCENDING)
 
-        val listener = query.addSnapshotListener { snapshot, _ ->
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("FirestoreRepo", "Listen failed: $error")
+                close(error)
+                return@addSnapshotListener
+            }
+
             if (snapshot != null) {
-                trySend(snapshot.toObjects(Comment::class.java))
+                val comments = snapshot.toObjects(Comment::class.java)
+                val sortedComments = comments.sortedBy { it.timestamp }
+                trySend(sortedComments)
             }
         }
         awaitClose { listener.remove() }

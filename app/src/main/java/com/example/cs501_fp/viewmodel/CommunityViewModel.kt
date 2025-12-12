@@ -63,10 +63,12 @@ class CommunityViewModel : ViewModel() {
     fun sendComment(eventId: String, content: String) {
         if (content.isBlank()) return
         viewModelScope.launch {
+            val user = auth.currentUser
             val comment = Comment(
                 eventId = eventId,
                 userId = currentUserId,
                 username = currentUserName,
+                avatarUrl = user?.photoUrl?.toString(),
                 content = content,
                 timestamp = System.currentTimeMillis()
             )

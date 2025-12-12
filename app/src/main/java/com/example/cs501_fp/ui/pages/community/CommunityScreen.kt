@@ -27,6 +27,13 @@ import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.viewmodel.CommunityViewModel
 import kotlin.text.take
 import kotlin.text.uppercase
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +44,10 @@ fun CommunityScreen(
     val posts by viewModel.publicPosts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var selectedPostId by remember { mutableStateOf<String?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {
@@ -79,13 +90,28 @@ fun CommunityScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(
-                        items = posts,
-                        key = { post -> post.id }
-                    ) { post ->
-                        CommunityPostCard(post = post)
+                    items(items = posts, key = { it.id }) { post ->
+                        CommunityPostCard(
+                            post = post,
+                            viewModel = viewModel,
+                            onCommentClick = {
+                                selectedPostId = post.id
+                                showBottomSheet = true
+                            }
+                        )
                     }
                 }
+            }
+        }
+        if (showBottomSheet && selectedPostId != null) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState
+            ) {
+                CommentSection(
+                    eventId = selectedPostId!!,
+                    viewModel = viewModel
+                )
             }
         }
     }
@@ -93,8 +119,9 @@ fun CommunityScreen(
 
 @Composable
 fun CommunityPostCard(
-post: UserEvent,
-viewModel: CommunityViewModel = viewModel()
+    post: UserEvent,
+    viewModel: CommunityViewModel = viewModel(),
+    onCommentClick: () -> Unit
 ) {
     val currentUserId = viewModel.currentUserId
     val isLiked = post.likedBy.contains(currentUserId)
@@ -196,7 +223,145 @@ viewModel: CommunityViewModel = viewModel()
                     Spacer(Modifier.width(4.dp))
                     Text(if (likeCount > 0) "$likeCount" else "Like")
                 }
+                Spacer(Modifier.width(16.dp))
+                TextButton(onClick = onCommentClick) {
+                    Icon(
+                        Icons.Outlined.ChatBubbleOutline,
+                        contentDescription = "Comment",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text("Comment")
+                }
             }
         }
     }
 }
+
+@Composable
+fun CommentSection(
+    eventId: String,
+    viewModel: CommunityViewModel
+) {
+    val commentsFlow = remember(eventId) { viewModel.getComments(eventId) }
+    val comments by commentsFlow.collectAsState(initial = emptyList())
+
+    var inputContent by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 300.dp, max = 600.dp)
+            .padding(bottom = 20.dp)
+    ) {
+        Text(
+            "Comments (${comments.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
+        )
+
+        HorizontalDivider()
+
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            if (comments.isEmpty()) {
+                item {
+                    Text(
+                        "No comments yet. Say something!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 20.dp).fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                items(comments) { comment ->
+                    CommentItem(comment)
+                }
+            }
+        }
+
+        HorizontalDivider()
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .imePadding(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = inputContent,
+                onValueChange = { inputContent = it },
+                placeholder = { Text("Add a comment...") },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(24.dp),
+                maxLines = 3
+            )
+            Spacer(Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    viewModel.sendComment(eventId, inputContent)
+                    inputContent = ""
+                },
+                enabled = inputContent.isNotBlank()
+            ) {
+                Text("Send")
+            }
+        }
+    }
+}
+
+@Composable
+fun CommentItem(comment: com.example.cs501_fp.data.model.Comment) {
+    val dateFormat = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        if (comment.avatarUrl != null) {
+            AsyncImage(
+                model = comment.avatarUrl,
+                contentDescription = null,
+                modifier = Modifier.size(36.dp).clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = comment.username.take(1).uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = comment.username.ifBlank { "Anonymous" },
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = dateFormat.format(Date(comment.timestamp)),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                text = comment.content,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
