@@ -464,7 +464,12 @@ fun TicketListContent(viewModel: CalendarViewModel) {
                 }
             }
         } else {
-            items(events) { event -> FlipTicketCard(event, viewModel) }
+            items(
+                items = events,
+                key = { event -> event.id }
+            ) { event ->
+                FlipTicketCard(event, viewModel)
+            }
         }
         item { Spacer(Modifier.height(60.dp)) }
     }
@@ -571,7 +576,10 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
                     Text("My Stubs & Memories", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(event.userImageUris) { path ->
+                        items(
+                            items = event.userImageUris,
+                            key = { path -> path }
+                        ) { path ->
                             AsyncImage(
                                 model = File(path),
                                 contentDescription = null,

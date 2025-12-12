@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOn
 
 class CommunityViewModel : ViewModel() {
     private val repo = FirestoreRepository()
@@ -35,7 +37,9 @@ class CommunityViewModel : ViewModel() {
                         it.venue.contains(query, ignoreCase = true)
             }
         }
-    }.stateIn(
+    }
+        .flowOn(Dispatchers.IO)
+        .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()

@@ -47,6 +47,8 @@ import java.time.ZoneId
 import java.util.UUID
 import kotlin.math.abs
 import androidx.compose.ui.draw.clip
+import coil.Coil
+import java.io.File
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +71,14 @@ fun AddEventScreen(
     var tmId by remember { mutableStateOf<String?>(null) }
     val tempPhotoUris = remember { mutableStateListOf<Uri>() }
     val tempBitmaps = remember { mutableStateListOf<Bitmap>() }
+    val tempCameraUri = remember {
+        val file = File(context.cacheDir, "camera_photo_${System.currentTimeMillis()}.jpg")
+        androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.provider",
+            file
+        )
+    }
 
     val searchResults by viewModel.searchResults.collectAsState()
     var priceError by remember { mutableStateOf(false) }
@@ -80,15 +90,20 @@ fun AddEventScreen(
     var showConflictDialog by remember { mutableStateOf(false) }
     val existingEvents by viewModel.events.collectAsState(initial = emptyList())
 
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-        if (bitmap != null) tempBitmaps.add(bitmap)
-    }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                tempPhotoUris.add(tempCameraUri)
+            }
+        }
+    )
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            cameraLauncher.launch(null)
+            cameraLauncher.launch(tempCameraUri)
         } else {
             Toast.makeText(context, "Camera permission is required to take photos", Toast.LENGTH_SHORT).show()
         }
@@ -281,7 +296,7 @@ fun AddEventScreen(
                         Manifest.permission.CAMERA
                     )
                     if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                        cameraLauncher.launch(null)
+                        cameraLauncher.launch(tempCameraUri)
                     } else {
                         permissionLauncher.launch(Manifest.permission.CAMERA)
                     }
@@ -297,14 +312,48 @@ fun AddEventScreen(
             if (tempPhotoUris.isNotEmpty() || tempBitmaps.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tempPhotoUris) { uri ->
-                        AsyncImage(model = uri, contentDescription = null, modifier = Modifier.size(80.dp).clip(MaterialTheme.shapes.medium), contentScale = ContentScale.Crop)
+                        AsyncImage(
+                            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                .data(uri)
+                                .size(200, 200)
+                                .crossfade(false)
+                                .build(),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                     items(tempBitmaps) { bmp ->
-                        AsyncImage(model = bmp, contentDescription = null, modifier = Modifier.size(80.dp).clip(MaterialTheme.shapes.medium), contentScale = ContentScale.Crop)
+                        AsyncImage(
+                            model = bmp,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                 }
             }
+
             Spacer(Modifier.height(24.dp))
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            android.util.Log.d("MEMORY_CLEANUP", "AddEventScreen is being disposed. Clearing temp images")
+            tempBitmaps.clear()
+            tempPhotoUris.clear()
+            Coil.imageLoader(context).memoryCache?.clear()
+            val cacheDir = context.cacheDir
+            cacheDir.listFiles()?.forEach { file ->
+                if (file.name.startsWith("camera_photo_")) {
+                    file.delete()
+                }
+            }
         }
     }
 }

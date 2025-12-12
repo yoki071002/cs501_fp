@@ -67,10 +67,8 @@ fun CalendarScreen(
             .map { it.first }
     }
 
-    LaunchedEffect(upcomingEvents) {
-        if (upcomingEvents.isNotEmpty()) {
-            viewModel.fetchUpcomingHeadcounts(upcomingEvents)
-        }
+    val upcomingEventIds = remember(upcomingEvents) {
+        upcomingEvents.map { it.id }.toSet()
     }
 
     Scaffold(

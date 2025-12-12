@@ -2,7 +2,9 @@ package com.example.cs501_fp.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cs501_fp.data.local.AppDatabase
@@ -22,7 +24,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 class CalendarViewModel(
     application: Application
@@ -89,12 +93,27 @@ class CalendarViewModel(
     /* ---------------------------------------------------------
      *                   FLOW: All Events
      * --------------------------------------------------------- */
+    // viewmodel/CalendarViewModel.kt
+
+    @RequiresApi(Build.VERSION_CODES.O)
     val events: StateFlow<List<UserEvent>> = localRepo.getAllEvents()
+        .onEach { list ->
+            val upcoming = list.filter {
+                try {
+                    LocalDate.parse(it.dateText) >= LocalDate.now()
+                } catch (e: Exception) { false }
+            }.take(6)
+
+            if (upcoming.isNotEmpty()) {
+                fetchUpcomingHeadcounts(upcoming)
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
 
     val totalSpent: StateFlow<Double?> = database.userEventDao().getTotalSpent()
         .stateIn(
