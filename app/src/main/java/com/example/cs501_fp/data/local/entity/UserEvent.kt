@@ -21,6 +21,7 @@ data class UserEvent(
     val userImageUris: List<String> = emptyList(),
     val publicImageUrls: List<String> = emptyList(),
     val notes: String = "",
+    val publicReview: String = "",
     val ticketmasterId: String? = null,
 
     @get:PropertyName("public")

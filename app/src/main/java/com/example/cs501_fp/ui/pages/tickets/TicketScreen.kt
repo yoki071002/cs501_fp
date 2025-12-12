@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -655,95 +656,52 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
 @Composable
 fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val userProfile by viewModel.currentUserProfile.collectAsState()
-
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var showEditNotesDialog by remember { mutableStateOf(false) }
-    var showPublishDialog by remember { mutableStateOf(false) }
+    var showEditRepoDialog by remember { mutableStateOf(false) }
+
+    var currentPage by remember { mutableIntStateOf(0) }
 
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Ticket") },
-            text = { Text("Remove this ticket from wallet?") },
+            text = { Text("Remove this ticket from wallet? This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.deleteEvent(event); showDeleteDialog = false }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Delete") }
+                TextButton(
+                    onClick = { viewModel.deleteEvent(event); showDeleteDialog = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Delete") }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancel") } }
         )
     }
 
-    if (showEditNotesDialog) {
-        EditNotesDialog(
+    if (showEditRepoDialog) {
+        EditRepoDialog(
             initialNotes = event.notes,
-            onDismiss = { showEditNotesDialog = false },
-            onSave = { newNotes ->
-                viewModel.updateEvent(event.copy(notes = newNotes))
-                showEditNotesDialog = false
-            }
-        )
-    }
-
-    if (showPublishDialog) {
-        AlertDialog(
-            onDismissRequest = { showPublishDialog = false },
-            title = { Text(if (event.isPublic) "Make Private?" else "Post to Community?") },
-            text = {
-                Text(if (event.isPublic)
-                    "This will remove the review from the public feed."
-                else "This will share your ticket and notes to the Community feed. Your exact seat number will be hidden.")
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (event.isPublic) {
-                        viewModel.updateEvent(event.copy(isPublic = false))
-                        showPublishDialog = false
-                        Toast.makeText(context, "Hidden from Community!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        showPublishDialog = false
-
-                        scope.launch {
-                            Toast.makeText(context, "Publishing... Please wait.", Toast.LENGTH_SHORT).show()
-
-                            val uploadedPublicUrls = mutableListOf<String>()
-
-                            event.userImageUris.forEach { uriString ->
-                                val uri = android.net.Uri.parse(uriString)
-                                val cloudUrl = viewModel.uploadImageToCloud(event.id, uri)
-                                if (cloudUrl != null) {
-                                    uploadedPublicUrls.add(cloudUrl)
-                                }
-                            }
-
-                            if (uploadedPublicUrls.isEmpty() && event.officialImageUrl != null) {
-                                uploadedPublicUrls.add(event.officialImageUrl)
-                            }
-
-                            val updatedEvent = event.copy(
-                                isPublic = true,
-                                publicImageUrls = uploadedPublicUrls,
-                                ownerId = userProfile?.uid ?: "",
-                                ownerName = userProfile?.username ?: "Unknown User",
-                                ownerAvatarUrl = userProfile?.avatarUrl
-                            )
-
-                            viewModel.updateEvent(updatedEvent)
-                            Toast.makeText(context, "Success! Posted to Community.", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }) {
-                    Text(if (event.isPublic) "Make Private" else "Post")
+            initialPublicReview = event.publicReview,
+            initialIsPublic = event.isPublic,
+            onDismiss = { showEditRepoDialog = false },
+            onSave = { notes, review, isPublic ->
+                val updatedEvent = event.copy(
+                    notes = notes,
+                    publicReview = review,
+                    isPublic = isPublic
+                )
+                viewModel.updateEvent(updatedEvent)
+                if (isPublic && !event.isPublic) {
+                    Toast.makeText(context, "Posted to Community!", Toast.LENGTH_SHORT).show()
+                } else if (!isPublic && event.isPublic) {
+                    Toast.makeText(context, "Removed from Community", Toast.LENGTH_SHORT).show()
                 }
-            },
-            dismissButton = { TextButton(onClick = { showPublishDialog = false }) { Text("Cancel") } }
+                showEditRepoDialog = false
+            }
         )
     }
 
     Card(
         modifier = Modifier.fillMaxSize(),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
@@ -757,85 +715,134 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Ticket Details",
+                    text = if (currentPage == 0) "Ticket Details" else "Your Repo",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontWeight = FontWeight.Bold
                 )
-                IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
-                }
-            }
 
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (currentPage == 1) {
+                        IconButton(onClick = { showEditRepoDialog = true }, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+                        }
+                        IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        Box(Modifier.width(1.dp).height(16.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)))
+                        Spacer(Modifier.width(8.dp))
+                    }
 
-            Row(Modifier.fillMaxWidth()) {
-                Column(Modifier.weight(1f)) {
-                    DetailItem(label = "Date", value = event.dateText)
-                    DetailItem(label = "Time", value = event.timeText)
-                }
-                Column(Modifier.weight(1f)) {
-                    DetailItem(label = "Seat", value = event.seat)
-                    DetailItem(label = "Price", value = "\$${"%.2f".format(event.price)}")
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            HorizontalDivider()
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("My Repo / Notes", style = MaterialTheme.typography.labelLarge)
-
-                Row {
-                    IconButton(onClick = { showPublishDialog = true }) {
+                    IconButton(
+                        onClick = { currentPage = 0 },
+                        enabled = currentPage == 1,
+                        modifier = Modifier.size(24.dp)
+                    ) {
                         Icon(
-                            imageVector = if (event.isPublic) Icons.Default.Public else Icons.Default.PublicOff,
-                            contentDescription = "Post to Community",
-                            tint = if (event.isPublic) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Default.KeyboardArrowLeft,
+                            contentDescription = "Prev",
+                            tint = if (currentPage == 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                         )
                     }
-                    IconButton(onClick = { showEditNotesDialog = true }) {
+
+                    Spacer(Modifier.width(4.dp))
+
+                    IconButton(
+                        onClick = { currentPage = 1 },
+                        enabled = currentPage == 0,
+                        modifier = Modifier.size(24.dp)
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Notes",
-                            tint = MaterialTheme.colorScheme.primary
+                            imageVector = Icons.Default.KeyboardArrowRight,
+                            contentDescription = "Next",
+                            tint = if (currentPage == 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                         )
                     }
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
-                    .clickable { showEditNotesDialog = true }
-                    .padding(8.dp)
-            ) {
-                if (event.notes.isBlank()) {
-                    Text(
-                        text = "Tap to write your review...",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontStyle = FontStyle.Italic
-                    )
+            Box(modifier = Modifier.weight(1f)) {
+
+                if (currentPage == 0) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(Modifier.fillMaxWidth()) {
+                            Box(Modifier.weight(1f)) { DetailItem("Date", event.dateText) }
+                            Box(Modifier.weight(1f)) { DetailItem("Time", event.timeText) }
+                        }
+                        DetailItem("Venue", event.venue)
+                        Row(Modifier.fillMaxWidth()) {
+                            Box(Modifier.weight(1f)) { DetailItem("Seat", event.seat.ifBlank { "GA" }) }
+                            Box(Modifier.weight(1f)) { DetailItem("Price", "$${"%.2f".format(event.price)}") }
+                        }
+                    }
                 } else {
-                    Text(
-                        text = event.notes,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.verticalScroll(rememberScrollState())
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (event.notes.isBlank() && event.publicReview.isBlank()) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Tap edit to write a review!",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontStyle = FontStyle.Italic
+                                )
+                            }
+                        } else {
+                            if (event.publicReview.isNotBlank()) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(Modifier.padding(12.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Public, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Public Review", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(event.publicReview, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+
+                            if (event.notes.isNotBlank()) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(Modifier.padding(12.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.secondary)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Private Notes", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(event.notes, style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                }
+                            }
+
+                            if (event.isPublic) {
+                                Spacer(Modifier.height(4.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Check, null, Modifier.size(12.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Posted to Community", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -852,62 +859,88 @@ fun DetailItem(label: String, value: String) {
 
 /** ------------------------ Edit Notes Dialog ------------------------ */
 @Composable
-fun EditNotesDialog(
+fun EditRepoDialog(
     initialNotes: String,
+    initialPublicReview: String,
+    initialIsPublic: Boolean,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String, String, Boolean) -> Unit
 ) {
     var notes by remember { mutableStateOf(initialNotes) }
+    var publicReview by remember { mutableStateOf(initialPublicReview) }
+    var isPublic by remember { mutableStateOf(initialIsPublic) }
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-                .padding(16.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Your Repo") },
+        text = {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    "Edit Repo / Notes",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
+                // 1. 私有笔记
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    placeholder = { Text("How was the show? Write your memories here...") },
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    singleLine = false,
-                    shape = RoundedCornerShape(12.dp)
+                    label = { Text("Private Notes") },
+                    placeholder = { Text("Only visible to you...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
-
+                // 2. 一键复制按钮
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { onSave(notes) }) {
-                        Text("Save")
+                    TextButton(onClick = {
+                        if (notes.isNotBlank()) publicReview = notes
+                    }) {
+                        Icon(Icons.Default.ContentCopy, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Copy to Review")
                     }
                 }
+
+                // 3. 公开剧评
+                OutlinedTextField(
+                    value = publicReview,
+                    onValueChange = { publicReview = it },
+                    label = { Text("Public Review") },
+                    placeholder = { Text("Share with community...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5
+                )
+
+                // 4. 公开开关
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Post to Community?", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            if (isPublic) "Visible in Stage Door" else "Private only",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(checked = isPublic, onCheckedChange = { isPublic = it })
+                }
             }
+        },
+        confirmButton = {
+            Button(onClick = { onSave(notes, publicReview, isPublic) }) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
         }
-    }
+    )
 }

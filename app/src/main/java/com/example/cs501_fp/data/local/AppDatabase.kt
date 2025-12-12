@@ -31,7 +31,7 @@ class Converters {
         UserEvent::class,
         Experience::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
