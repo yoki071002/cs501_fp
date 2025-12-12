@@ -60,7 +60,7 @@ class CommunityViewModel : ViewModel() {
 
     val currentUserName: String get() = auth.currentUser?.email?.substringBefore("@") ?: "User"
 
-    fun sendComment(eventId: String, content: String) {
+    fun sendComment(eventId: String, postOwnerId: String, content: String) {
         if (content.isBlank()) return
         viewModelScope.launch {
             val user = auth.currentUser
@@ -72,7 +72,17 @@ class CommunityViewModel : ViewModel() {
                 content = content,
                 timestamp = System.currentTimeMillis()
             )
-            repo.addComment(comment)
+            repo.addComment(comment, postOwnerId)
+        }
+    }
+
+    fun deleteComment(comment: Comment, postOwnerId: String) {
+        viewModelScope.launch {
+            repo.deleteComment(
+                commentId = comment.id,
+                eventId = comment.eventId,
+                postOwnerId = postOwnerId
+            )
         }
     }
 

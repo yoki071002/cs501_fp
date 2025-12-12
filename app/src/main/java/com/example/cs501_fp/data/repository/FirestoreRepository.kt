@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.FieldValue
 import android.net.Uri
 import com.google.firebase.storage.FirebaseStorage
 import com.example.cs501_fp.data.model.Comment
@@ -179,10 +180,45 @@ class FirestoreRepository {
         }.await()
     }
 
-    suspend fun addComment(comment: Comment) {
+    suspend fun addComment(comment: Comment, postOwnerId: String) {
         val newDocRef = db.collection("comments").document()
         val commentWithId = comment.copy(id = newDocRef.id)
         newDocRef.set(commentWithId).await()
+        if (postOwnerId.isNotBlank()) {
+            try {
+                db.collection("users")
+                    .document(postOwnerId)
+                    .collection("events")
+                    .document(comment.eventId)
+                    .update("commentCount", FieldValue.increment(1))
+                    .await()
+            } catch (e: Exception) {
+                Log.e("FirestoreRepo", "Failed to increment comment count", e)
+            }
+        }
+    }
+
+    suspend fun deleteComment(commentId: String, eventId: String, postOwnerId: String) {
+        if (commentId.isBlank()) return
+        try {
+            db.collection("comments").document(commentId).delete().await()
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Failed to delete comment doc", e)
+            return
+        }
+
+        if (postOwnerId.isNotBlank() && eventId.isNotBlank()) {
+            try {
+                db.collection("users")
+                    .document(postOwnerId)
+                    .collection("events")
+                    .document(eventId)
+                    .update("commentCount", FieldValue.increment(-1))
+                    .await()
+            } catch (e: Exception) {
+                Log.e("FirestoreRepo", "Failed to decrement comment count", e)
+            }
+        }
     }
 
     fun getCommentsFlow(eventId: String): Flow<List<Comment>> = callbackFlow {

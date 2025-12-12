@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.ThumbUp
@@ -48,6 +49,7 @@ fun CommunityScreen(
     var showBottomSheet by remember { mutableStateOf(false) }
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var selectedPostOwnerId by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -96,6 +98,7 @@ fun CommunityScreen(
                             viewModel = viewModel,
                             onCommentClick = {
                                 selectedPostId = post.id
+                                selectedPostOwnerId = post.ownerId
                                 showBottomSheet = true
                             }
                         )
@@ -110,6 +113,7 @@ fun CommunityScreen(
             ) {
                 CommentSection(
                     eventId = selectedPostId!!,
+                    postOwnerId = selectedPostOwnerId ?: "",
                     viewModel = viewModel
                 )
             }
@@ -141,7 +145,9 @@ fun CommunityPostCard(
                             .size(100, 100)
                             .build(),
                         contentDescription = null,
-                        modifier = Modifier.size(40.dp).clip(CircleShape),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape),
                         contentScale = ContentScale.Crop
                     )
                 } else {
@@ -231,7 +237,11 @@ fun CommunityPostCard(
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text("Comment")
+                    if (post.commentCount > 0) {
+                        Text("${post.commentCount}")
+                    } else {
+                        Text("Comment")
+                    }
                 }
             }
         }
@@ -241,11 +251,12 @@ fun CommunityPostCard(
 @Composable
 fun CommentSection(
     eventId: String,
+    postOwnerId: String,
     viewModel: CommunityViewModel
 ) {
     val commentsFlow = remember(eventId) { viewModel.getComments(eventId) }
     val comments by commentsFlow.collectAsState(initial = emptyList())
-
+    val currentUserId = viewModel.currentUserId
     var inputContent by remember { mutableStateOf("") }
 
     Column(
@@ -258,13 +269,17 @@ fun CommentSection(
             "Comments (${comments.size})",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally)
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.CenterHorizontally)
         )
 
         HorizontalDivider()
 
         LazyColumn(
-            modifier = Modifier.weight(1f).fillMaxWidth(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -274,13 +289,22 @@ fun CommentSection(
                         "No comments yet. Say something!",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 20.dp).fillMaxWidth(),
+                        modifier = Modifier
+                            .padding(top = 20.dp)
+                            .fillMaxWidth(),
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
                 }
             } else {
                 items(comments) { comment ->
-                    CommentItem(comment)
+                    CommentItem(
+                        comment = comment,
+                        currentUserId = currentUserId,
+                        postOwnerId = postOwnerId,
+                        onDeleteClick = {
+                            viewModel.deleteComment(comment, postOwnerId)
+                        }
+                    )
                 }
             }
         }
@@ -305,7 +329,7 @@ fun CommentSection(
             Spacer(Modifier.width(8.dp))
             Button(
                 onClick = {
-                    viewModel.sendComment(eventId, inputContent)
+                    viewModel.sendComment(eventId, postOwnerId, inputContent)
                     inputContent = ""
                 },
                 enabled = inputContent.isNotBlank()
@@ -317,20 +341,37 @@ fun CommentSection(
 }
 
 @Composable
-fun CommentItem(comment: com.example.cs501_fp.data.model.Comment) {
-    val dateFormat = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+fun CommentItem(
+    comment: com.example.cs501_fp.data.model.Comment,
+    currentUserId: String,
+    postOwnerId: String,
+    onDeleteClick: () -> Unit
 
-    Row(modifier = Modifier.fillMaxWidth()) {
+) {
+    val dateFormat = SimpleDateFormat("MMM d, HH:mm", Locale.getDefault())
+    val canDelete = (currentUserId == comment.userId) || (currentUserId == postOwnerId)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.Top
+    ) {
         if (comment.avatarUrl != null) {
             AsyncImage(
                 model = comment.avatarUrl,
                 contentDescription = null,
-                modifier = Modifier.size(36.dp).clip(CircleShape),
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
         } else {
             Box(
-                modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -343,7 +384,7 @@ fun CommentItem(comment: com.example.cs501_fp.data.model.Comment) {
 
         Spacer(Modifier.width(12.dp))
 
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = comment.username.ifBlank { "Anonymous" },
@@ -357,10 +398,28 @@ fun CommentItem(comment: com.example.cs501_fp.data.model.Comment) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+
+            Spacer(Modifier.height(4.dp))
+
             Text(
                 text = comment.content,
                 style = MaterialTheme.typography.bodyMedium
             )
+        }
+        if (canDelete) {
+            IconButton(
+                onClick = onDeleteClick,
+                modifier = Modifier
+                    .size(24.dp)
+                    .padding(top = 2.dp)
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete Comment",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }

@@ -28,6 +28,7 @@ data class UserEvent(
     var isPublic: Boolean = false,
 
     val likedBy: List<String> = emptyList(),
+    val commentCount: Int = 0,
 
     val ownerId: String = "",
     val ownerName: String = "",
