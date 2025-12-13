@@ -16,20 +16,30 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOn
 
+enum class SortOption {
+    NEWEST,
+    TRENDING,
+    MINE
+}
+
 class CommunityViewModel : ViewModel() {
     private val repo = FirestoreRepository()
     private val auth = FirebaseAuth.getInstance()
 
     val currentUserId: String get() = auth.currentUser?.uid ?: ""
+    val currentUserName: String get() = auth.currentUser?.email?.substringBefore("@") ?: "User"
 
-    // 搜索词
     private val _searchQuery = MutableStateFlow("")
+
+    private val _sortOption = MutableStateFlow(SortOption.NEWEST)
+    val sortOption: StateFlow<SortOption> = _sortOption
 
     val publicPosts: StateFlow<List<UserEvent>> = combine(
         repo.getPublicEventsFlow(),
-        _searchQuery
-    ) { events, query ->
-        if (query.isBlank()) {
+        _searchQuery,
+        _sortOption
+    ) { events, query, sort ->
+        val filtered = if (query.isBlank()) {
             events
         } else {
             events.filter {
@@ -37,13 +47,19 @@ class CommunityViewModel : ViewModel() {
                         it.venue.contains(query, ignoreCase = true)
             }
         }
+
+        when (sort) {
+            SortOption.NEWEST -> filtered.sortedByDescending { it.dateText }
+            SortOption.TRENDING -> filtered.sortedByDescending { it.likedBy.size }
+            SortOption.MINE -> filtered.filter { it.ownerId == currentUserId }
+        }
     }
         .flowOn(Dispatchers.IO)
         .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -52,13 +68,15 @@ class CommunityViewModel : ViewModel() {
         _searchQuery.value = query
     }
 
+    fun setSortOption(option: SortOption) {
+        _sortOption.value = option
+    }
+
     fun toggleLike(event: UserEvent) {
         viewModelScope.launch {
             repo.toggleLike(event.id, currentUserId)
         }
     }
-
-    val currentUserName: String get() = auth.currentUser?.email?.substringBefore("@") ?: "User"
 
     fun sendComment(eventId: String, postOwnerId: String, content: String) {
         if (content.isBlank()) return
