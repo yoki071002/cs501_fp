@@ -224,7 +224,11 @@ private fun DailyPickBanner(
     ) {
         if (pick.imageUrl != null) {
             AsyncImage(
-                model = pick.imageUrl,
+                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                    .data(pick.imageUrl)
+                    .crossfade(true)
+                    .size(600, 600)
+                    .build(),
                 contentDescription = "Album Art",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
@@ -301,12 +305,15 @@ private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (show.imageUrl != null) {
                 AsyncImage(
-                    model = show.imageUrl,
+                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                        .data(show.imageUrl)
+                        .crossfade(true)
+                        .size(150, 150)
+                        .build(),
                     contentDescription = null,
                     modifier = Modifier
                         .size(56.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                        .clip(RoundedCornerShape(10.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {

@@ -75,7 +75,7 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
 
     /* -------------------- Coil -------------------- */
-    implementation("io.coil-kt:coil-compose:2.2.2")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
     /* -------------------- Coroutine -------------------- */
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
@@ -91,6 +91,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
 
     /* -------------------- Test -------------------- */
     testImplementation(libs.junit)

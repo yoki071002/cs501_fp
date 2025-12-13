@@ -7,7 +7,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.AggregateSource
+import com.google.firebase.firestore.FieldValue
+import android.net.Uri
+import com.google.firebase.storage.FirebaseStorage
+import com.example.cs501_fp.data.model.Comment
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +20,7 @@ class FirestoreRepository {
 
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
+    private val storage = FirebaseStorage.getInstance()
 
     /** 获取当前用户 DocumentReference，如果未登录返回 null */
     private fun userDoc(): DocumentReference? {
@@ -138,4 +142,103 @@ class FirestoreRepository {
             .await()
             .toObjects(Experience::class.java)
     }
+
+
+    /* --------------------------------------------------------
+     *                     IMAGE UPLOAD (for community)
+     * -------------------------------------------------------- */
+    suspend fun uploadEventImage(eventId: String, uri: Uri): String? {
+        val uid = auth.currentUser?.uid ?: return null
+        val filename = "${System.currentTimeMillis()}.jpg"
+        val ref = storage.reference.child("event_images/$uid/$eventId/$filename")
+
+        return try {
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Image upload failed", e)
+            null
+        }
+    }
+
+    /* --------------------------------------------------------
+     *                     KUDOS & COMMENTS
+     * -------------------------------------------------------- */
+    suspend fun toggleLike(eventId: String, currentUserId: String) {
+        val docRef = db.collectionGroup("events").whereEqualTo("id", eventId).get().await().documents.firstOrNull()?.reference ?: return
+
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(docRef)
+            val likedBy = snapshot.get("likedBy") as? List<String> ?: emptyList()
+
+            val newLikedBy = if (likedBy.contains(currentUserId)) {
+                likedBy - currentUserId
+            } else {
+                likedBy + currentUserId
+            }
+            transaction.update(docRef, "likedBy", newLikedBy)
+        }.await()
+    }
+
+    suspend fun addComment(comment: Comment, postOwnerId: String) {
+        val newDocRef = db.collection("comments").document()
+        val commentWithId = comment.copy(id = newDocRef.id)
+        newDocRef.set(commentWithId).await()
+        if (postOwnerId.isNotBlank()) {
+            try {
+                db.collection("users")
+                    .document(postOwnerId)
+                    .collection("events")
+                    .document(comment.eventId)
+                    .update("commentCount", FieldValue.increment(1))
+                    .await()
+            } catch (e: Exception) {
+                Log.e("FirestoreRepo", "Failed to increment comment count", e)
+            }
+        }
+    }
+
+    suspend fun deleteComment(commentId: String, eventId: String, postOwnerId: String) {
+        if (commentId.isBlank()) return
+        try {
+            db.collection("comments").document(commentId).delete().await()
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Failed to delete comment doc", e)
+            return
+        }
+
+        if (postOwnerId.isNotBlank() && eventId.isNotBlank()) {
+            try {
+                db.collection("users")
+                    .document(postOwnerId)
+                    .collection("events")
+                    .document(eventId)
+                    .update("commentCount", FieldValue.increment(-1))
+                    .await()
+            } catch (e: Exception) {
+                Log.e("FirestoreRepo", "Failed to decrement comment count", e)
+            }
+        }
+    }
+
+    fun getCommentsFlow(eventId: String): Flow<List<Comment>> = callbackFlow {
+        val query = db.collection("comments")
+            .whereEqualTo("eventId", eventId)
+
+        val listener = query.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("FirestoreRepo", "Listen failed: $error")
+                close(error)
+                return@addSnapshotListener
+            }
+
+            if (snapshot != null) {
+                val comments = snapshot.toObjects(Comment::class.java)
+                val sortedComments = comments.sortedBy { it.timestamp }
+                trySend(sortedComments)
+            }
+        }
+        awaitClose { listener.remove() }
+    }
+
 }

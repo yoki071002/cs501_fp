@@ -19,10 +19,19 @@ data class UserEvent(
 
     val officialImageUrl: String? = null,
     val userImageUris: List<String> = emptyList(),
+    val publicImageUrls: List<String> = emptyList(),
     val notes: String = "",
+    val publicReview: String = "",
     val ticketmasterId: String? = null,
 
     @get:PropertyName("public")
     @set:PropertyName("public")
-    var isPublic: Boolean = false
+    var isPublic: Boolean = false,
+
+    val likedBy: List<String> = emptyList(),
+    val commentCount: Int = 0,
+
+    val ownerId: String = "",
+    val ownerName: String = "",
+    val ownerAvatarUrl: String? = null
 )

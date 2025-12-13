@@ -22,17 +22,22 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cs501_fp.ui.components.BottomNavBar
 import com.example.cs501_fp.ui.components.ShowDetailScreen
 import com.example.cs501_fp.ui.pages.calendar.*
 import com.example.cs501_fp.ui.pages.home.HomeScreen
+import com.example.cs501_fp.ui.pages.profile.UserProfileScreen
 import com.example.cs501_fp.ui.pages.profile.ProfileScreen
 import com.example.cs501_fp.ui.pages.tickets.TicketScreen
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
 import com.example.cs501_fp.ui.pages.auth.RegisterScreen
+import androidx.compose.runtime.getValue
+import androidx.navigation.compose.currentBackStackEntryAsState
+
 
 data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -57,8 +62,9 @@ fun NavGraph(
 
     val currentUser = FirebaseAuth.getInstance().currentUser
     val startDestination = if (currentUser != null) "home" else "login"
-    val currentRoute = navController.currentDestination?.route
-    val showBottomBar = currentRoute != "login"
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val showBottomBar = currentRoute != "login" && currentRoute != "register"
 
     Scaffold(
         bottomBar = {
@@ -98,11 +104,8 @@ fun NavGraph(
             composable("home") {
                 LaunchedEffect(Unit) {
                     val user = FirebaseAuth.getInstance().currentUser
-                    if (user != null) {
-                        calendarVM.syncFromCloud()
-                    }
+                    if (user != null) calendarVM.syncFromCloud()
                 }
-
                 HomeScreen(
                     viewModel = homeVM,
                     onShowClick = { show -> navController.navigate("detail/${show.id}") },
@@ -161,14 +164,36 @@ fun NavGraph(
 
             /** ---------------- COMMUNITY ---------------- */
             composable("community") {
-                CommunityScreen(onProfileClick = { navController.navigate("profile") })
+                CommunityScreen(
+                    onProfileClick = { navController.navigate("profile") },
+                    onUserClick = { userId ->
+                        navController.navigate("user_profile?userId=$userId")
+                    }
+                )
             }
 
-            /** ---------------- PROFILE ---------------- */
             composable("profile") {
                 ProfileScreen(
                     navController = navController,
                     themeViewModel = themeViewModel
+                )
+            }
+
+            /** ---------------- PROFILE ---------------- */
+            composable(
+                route = "user_profile?userId={userId}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("userId") {
+                        nullable = true
+                        defaultValue = null
+                        type = androidx.navigation.NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId")
+                UserProfileScreen(
+                    navController = navController,
+                    userId = userId
                 )
             }
         }
