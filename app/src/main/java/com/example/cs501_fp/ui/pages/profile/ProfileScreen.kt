@@ -228,6 +228,7 @@ fun ProfileScreen(
 
             Button(
                 onClick = {
+                    viewModel.clearLocalData()
                     FirebaseAuth.getInstance().signOut()
                     navController.navigate("login") { popUpTo(0) }
                 },

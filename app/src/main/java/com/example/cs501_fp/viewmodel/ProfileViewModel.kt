@@ -1,18 +1,25 @@
 package com.example.cs501_fp.viewmodel
 
+import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cs501_fp.data.local.AppDatabase
 import com.example.cs501_fp.data.model.UserProfile
+import com.example.cs501_fp.data.repository.LocalRepository
 import com.example.cs501_fp.data.repository.UserRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-class ProfileViewModel : ViewModel() {
-    private val repo = UserRepository()
+class ProfileViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val userRepo = UserRepository()
     private val auth = FirebaseAuth.getInstance()
+
+    private val db = AppDatabase.getInstance(application)
+    private val localRepo = LocalRepository(db.userEventDao(), db.experienceDao())
 
     private val _profile = MutableStateFlow(UserProfile())
     val profile: StateFlow<UserProfile> = _profile
@@ -28,7 +35,7 @@ class ProfileViewModel : ViewModel() {
     fun loadProfile(userId: String? = null) {
         viewModelScope.launch {
             _isLoading.value = true
-            val p = repo.getUserProfile(userId)
+            val p = userRepo.getUserProfile(userId)
             if (p != null) _profile.value = p
             _isLoading.value = false
         }
@@ -41,7 +48,7 @@ class ProfileViewModel : ViewModel() {
                 bio = bio,
                 favoriteShows = favShows
             )
-            repo.saveUserProfile(newProfile)
+            userRepo.saveUserProfile(newProfile)
             _profile.value = newProfile
         }
     }
@@ -49,13 +56,19 @@ class ProfileViewModel : ViewModel() {
     fun updateAvatar(uri: Uri) {
         viewModelScope.launch {
             _isLoading.value = true
-            val url = repo.uploadAvatar(uri)
+            val url = userRepo.uploadAvatar(uri)
             if (url != null) {
                 val newProfile = _profile.value.copy(avatarUrl = url)
-                repo.saveUserProfile(newProfile)
+                userRepo.saveUserProfile(newProfile)
                 _profile.value = newProfile
             }
             _isLoading.value = false
+        }
+    }
+
+    fun clearLocalData() {
+        viewModelScope.launch {
+            localRepo.deleteAllEvents()
         }
     }
 }
