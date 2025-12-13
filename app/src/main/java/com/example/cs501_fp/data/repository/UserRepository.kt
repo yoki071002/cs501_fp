@@ -14,11 +14,11 @@ class UserRepository {
     private val storage = FirebaseStorage.getInstance()
     private val currentUid get() = auth.currentUser?.uid
 
-    suspend fun getUserProfile(): UserProfile? {
-        val uid = currentUid ?: return null
+    suspend fun getUserProfile(userId: String? = null): UserProfile? {
+        val targetUid = userId ?: currentUid ?: return null
         return try {
-            val snapshot = db.collection("users").document(uid).get().await()
-            snapshot.toObject(UserProfile::class.java)?.copy(uid = uid)
+            val snapshot = db.collection("users").document(targetUid).get().await()
+            snapshot.toObject(UserProfile::class.java)?.copy(uid = targetUid)
         } catch (e: Exception) {
             null
         }

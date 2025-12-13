@@ -50,7 +50,8 @@ import java.util.Locale
 @Composable
 fun CommunityScreen(
     viewModel: CommunityViewModel = viewModel(),
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onUserClick: (String) -> Unit
 ) {
     val posts by viewModel.publicPosts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -153,7 +154,8 @@ fun CommunityScreen(
                                 selectedPostId = post.id
                                 selectedPostOwnerId = post.ownerId
                                 showBottomSheet = true
-                            }
+                            },
+                            onUserClick = { onUserClick(post.ownerId) }
                         )
                     }
                 }
@@ -212,7 +214,8 @@ fun CommunityPostCard(
     post: UserEvent,
     viewModel: CommunityViewModel = viewModel(),
     onImageClick: (String) -> Unit,
-    onCommentClick: () -> Unit
+    onCommentClick: () -> Unit,
+    onUserClick: () -> Unit
 ) {
     val currentUserId = viewModel.currentUserId
     val isLiked = post.likedBy.contains(currentUserId)
@@ -234,7 +237,8 @@ fun CommunityPostCard(
                         contentDescription = null,
                         modifier = Modifier
                             .size(40.dp)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .clickable { onUserClick() },
                         contentScale = ContentScale.Crop
                     )
                 } else {
@@ -242,7 +246,8 @@ fun CommunityPostCard(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .clickable { onUserClick() },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -253,7 +258,8 @@ fun CommunityPostCard(
                     }
                 }
                 Spacer(Modifier.width(12.dp))
-                Column {
+
+                Column(Modifier.clickable { onUserClick() }) {
                     Text(
                         text = post.ownerName.ifBlank { "Anonymous" },
                         style = MaterialTheme.typography.labelLarge,

@@ -28,6 +28,7 @@ import com.example.cs501_fp.ui.components.BottomNavBar
 import com.example.cs501_fp.ui.components.ShowDetailScreen
 import com.example.cs501_fp.ui.pages.calendar.*
 import com.example.cs501_fp.ui.pages.home.HomeScreen
+import com.example.cs501_fp.ui.pages.profile.UserProfileScreen
 import com.example.cs501_fp.ui.pages.profile.ProfileScreen
 import com.example.cs501_fp.ui.pages.tickets.TicketScreen
 import com.example.cs501_fp.viewmodel.CalendarViewModel
@@ -103,11 +104,8 @@ fun NavGraph(
             composable("home") {
                 LaunchedEffect(Unit) {
                     val user = FirebaseAuth.getInstance().currentUser
-                    if (user != null) {
-                        calendarVM.syncFromCloud()
-                    }
+                    if (user != null) calendarVM.syncFromCloud()
                 }
-
                 HomeScreen(
                     viewModel = homeVM,
                     onShowClick = { show -> navController.navigate("detail/${show.id}") },
@@ -166,14 +164,36 @@ fun NavGraph(
 
             /** ---------------- COMMUNITY ---------------- */
             composable("community") {
-                CommunityScreen(onProfileClick = { navController.navigate("profile") })
+                CommunityScreen(
+                    onProfileClick = { navController.navigate("profile") },
+                    onUserClick = { userId ->
+                        navController.navigate("user_profile?userId=$userId")
+                    }
+                )
             }
 
-            /** ---------------- PROFILE ---------------- */
             composable("profile") {
                 ProfileScreen(
                     navController = navController,
                     themeViewModel = themeViewModel
+                )
+            }
+
+            /** ---------------- PROFILE ---------------- */
+            composable(
+                route = "user_profile?userId={userId}",
+                arguments = listOf(
+                    androidx.navigation.navArgument("userId") {
+                        nullable = true
+                        defaultValue = null
+                        type = androidx.navigation.NavType.StringType
+                    }
+                )
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId")
+                UserProfileScreen(
+                    navController = navController,
+                    userId = userId
                 )
             }
         }
