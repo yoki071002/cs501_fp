@@ -49,7 +49,6 @@ fun ProfileScreen(
     val profile by viewModel.profile.collectAsState()
     val isDark by themeViewModel.isDarkTheme.collectAsState()
 
-    var notify by remember { mutableStateOf(true) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
 
@@ -197,16 +196,6 @@ fun ProfileScreen(
                         Switch(
                             checked = isDark,
                             onCheckedChange = { themeViewModel.toggleTheme(it) }
-                        )
-                    }
-                )
-                SettingsItem(
-                    icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    trailing = {
-                        Switch(
-                            checked = notify,
-                            onCheckedChange = { notify = it }
                         )
                     }
                 )
