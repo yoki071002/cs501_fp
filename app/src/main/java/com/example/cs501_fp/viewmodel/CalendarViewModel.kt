@@ -127,21 +127,47 @@ class CalendarViewModel(
      * --------------------------------------------------------- */
     fun addEvent(event: UserEvent) {
         viewModelScope.launch {
-            localRepo.addEvent(event)
-            FirebaseAuth.getInstance().currentUser?.let {
-                cloudRepo.uploadEvent(event)
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            var eventToSave = event
+
+            if (currentUser != null) {
+                val profile = userRepo.getUserProfile()
+
+                eventToSave = event.copy(
+                    ownerId = currentUser.uid,
+                    ownerName = profile?.username?.ifBlank { currentUser.email?.substringBefore("@") } ?: "User",
+                    ownerAvatarUrl = profile?.avatarUrl
+                )
+            }
+
+            localRepo.addEvent(eventToSave)
+            if (currentUser != null) {
+                cloudRepo.uploadEvent(eventToSave)
             }
         }
     }
 
     fun updateEvent(event: UserEvent) {
         viewModelScope.launch {
-            localRepo.addEvent(event)
-            FirebaseAuth.getInstance().currentUser?.let {
-                cloudRepo.uploadEvent(event)
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            var eventToSave = event
+
+            if (currentUser != null && event.ownerId == currentUser.uid) {
+                val profile = userRepo.getUserProfile()
+                eventToSave = event.copy(
+                    ownerName = profile?.username ?: event.ownerName,
+                    ownerAvatarUrl = profile?.avatarUrl ?: event.ownerAvatarUrl
+                )
+            }
+
+            localRepo.addEvent(eventToSave)
+
+            if (currentUser != null) {
+                cloudRepo.uploadEvent(eventToSave)
             }
         }
     }
+
 
     fun deleteEvent(event: UserEvent) {
         viewModelScope.launch {
