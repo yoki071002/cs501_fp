@@ -1,10 +1,13 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/calendar/DayEventListScreen.kt
+// Displays a list of all events occurring on a specific date (used when a date has multiple items)
+
 package com.example.cs501_fp.ui.pages.calendar
 
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,10 +25,7 @@ fun DayEventListScreen(
     viewModel: CalendarViewModel,
     navController: NavHostController
 ) {
-    // 所有事件
     val events by viewModel.events.collectAsState(initial = emptyList())
-
-    // 过滤当天
     val dayEvents = remember(events, dateText) {
         events.filter { it.dateText == dateText }
     }
@@ -37,7 +37,7 @@ fun DayEventListScreen(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -107,7 +107,7 @@ private fun DayEventList(
                     }
 
                     Text(
-                        "\$${"%.2f".format(e.price)}",
+                        "$${"%.2f".format(e.price)}",
                         style = MaterialTheme.typography.titleMedium
                     )
                 }

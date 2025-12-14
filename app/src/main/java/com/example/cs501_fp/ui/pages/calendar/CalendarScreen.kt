@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/calendar/CalendarScreen.kt
+// Displays the user's personal calendar, highlighting dates with events and showing upcoming shows.
+
 package com.example.cs501_fp.ui.pages.calendar
 
 import android.os.Build
@@ -40,15 +43,20 @@ fun CalendarScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+
+    // Data Streams
     val events by viewModel.events.collectAsState(initial = emptyList())
     val headcounts by viewModel.headcounts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Data Calculations
     val today = LocalDate.now()
     val formatter = DateTimeFormatter.ISO_LOCAL_DATE
 
+    // State for currently displayed month in the grid
     var currentMonth by remember { mutableStateOf(YearMonth.now()) }
 
+    // Parse date strings only when events list changes
     val eventsWithParsed = remember(events) {
         events.mapNotNull { e ->
             try {
@@ -59,6 +67,7 @@ fun CalendarScreen(
         }
     }
 
+    // Filter next 6 events for the upcoming list
     val upcomingEvents = remember(eventsWithParsed) {
         eventsWithParsed
             .filter { it.second >= today }
@@ -71,6 +80,8 @@ fun CalendarScreen(
         upcomingEvents.map { it.id }.toSet()
     }
 
+
+    // --- Main UI Structure ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -158,8 +169,8 @@ fun CalendarScreen(
     }
 }
 
-/* ----------------------- Month Header ----------------------- */
 
+// --- Month Header ---
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun MonthHeader(month: YearMonth, onPrev: () -> Unit, onNext: () -> Unit) {
@@ -178,8 +189,8 @@ private fun MonthHeader(month: YearMonth, onPrev: () -> Unit, onNext: () -> Unit
     }
 }
 
-/* ----------------------- Weekday Header ----------------------- */
 
+// --- Weekly Header ---
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun WeekdayHeader() {
@@ -199,8 +210,8 @@ private fun WeekdayHeader() {
     }
 }
 
-/* ----------------------- Month Grid ----------------------- */
 
+// --- Month Grid ---
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun MonthGrid(
@@ -278,8 +289,8 @@ private fun DayCell(
     }
 }
 
-/* ----------------------- Upcoming List ----------------------- */
 
+// --- Upcoming List ---
 @Composable
 private fun UpcomingList(
     items: List<UserEvent>,
@@ -323,7 +334,7 @@ private fun UpcomingList(
                             }
                         }
                     }
-                    Text("\$${"%.0f".format(e.price)}", style = MaterialTheme.typography.bodyMedium)
+                    Text("$${"%.0f".format(e.price)}", style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }

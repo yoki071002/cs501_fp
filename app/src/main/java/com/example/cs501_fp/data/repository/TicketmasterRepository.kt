@@ -11,6 +11,7 @@ import com.example.cs501_fp.data.network.TicketmasterApiService
 import com.example.cs501_fp.util.Constants
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -27,9 +28,12 @@ class TicketmasterRepository {
 
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getEvents(startDate: ZonedDateTime, endDate: ZonedDateTime): List<TicketmasterEvent> {
+        val utcStart = startDate.withZoneSameInstant(ZoneId.of("UTC"))
+        val utcEnd = endDate.withZoneSameInstant(ZoneId.of("UTC"))
+
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
-        val startDateTimeStr = startDate.format(formatter)
-        val endDateTimeStr = endDate.format(formatter)
+        val startDateTimeStr = utcStart.format(formatter)
+        val endDateTimeStr = utcEnd.format(formatter)
 
         return try {
             val response = api.getEvents(
@@ -37,15 +41,14 @@ class TicketmasterRepository {
                 city = "New York",
                 startDateTime = startDateTimeStr,
                 endDateTime = endDateTimeStr,
-                size = 200,
+                size = 100,
                 keyword = "Broadway",
                 classificationName = "Theatre",
                 sort = "date,asc"
             )
-
-            response.embedded?.events ?: emptyList()
+            response._embedded?.events ?: emptyList()
         } catch (e: Exception) {
-            Log.e("TicketmasterRepo", "Error fetching events: ${e.message}")
+            Log.e("TicketmasterRepo", "Error fetching events: ${e.message}", e)
             emptyList()
         }
     }
@@ -54,7 +57,7 @@ class TicketmasterRepository {
         return try {
             api.getEventById(eventId = eventId, apiKey = Constants.TICKETMASTER_API_KEY)
         } catch (e: Exception) {
-            Log.e("TicketmasterRepo", "Error fetching event details for ID $eventId: ${e.message}")
+            Log.e("TicketmasterRepo", "Error details: ${e.message}")
             null
         }
     }
@@ -62,19 +65,20 @@ class TicketmasterRepository {
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun searchEventsByKeyword(keyword: String): List<TicketmasterEvent> {
         return try {
-            val now = ZonedDateTime.now()
+            val now = ZonedDateTime.now(ZoneId.of("UTC"))
             val response = api.getEvents(
                 apiKey = Constants.TICKETMASTER_API_KEY,
                 city = "New York",
                 startDateTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
                 endDateTime = now.plusMonths(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
-                size = 10,
+                size = 20,
                 keyword = keyword,
                 classificationName = "Theatre",
                 sort = "date,asc"
             )
-            response.embedded?.events ?: emptyList()
+            response._embedded?.events ?: emptyList()
         } catch (e: Exception) {
+            Log.e("TicketmasterRepo", "Error searching: ${e.message}")
             emptyList()
         }
     }

@@ -222,7 +222,7 @@ class HomeViewModel : ViewModel() {
                     val summary = ShowSummary(
                         id = event.id ?: "",
                         title = event.name ?: "Untitled",
-                        venue = event.embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
+                        venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
                         dateTime = LocalDate.parse(dateStr),
                         priceFrom = 100,
                         imageUrl = event.images?.firstOrNull()?.url

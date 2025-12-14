@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/auth/LoginScreen.kt
+// The initial authentication screen allowing users to sign in via Firebase
+
 package com.example.cs501_fp.ui.pages.auth
 
 import android.widget.Toast
@@ -43,12 +46,14 @@ fun LoginScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // Header
         Text("OnCore", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(8.dp))
         Text("Sign in to sync your tickets", style = MaterialTheme.typography.bodyMedium)
 
         Spacer(Modifier.height(32.dp))
 
+        // Email Input
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -59,6 +64,7 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(16.dp))
 
+        // Password Input
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -75,9 +81,11 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(Modifier.height(24.dp))
 
+        // Action Buttons
         if (isLoading) {
             CircularProgressIndicator()
         } else {
+            // Login Button
             Button(
                 onClick = {
                     if (email.isNotBlank() && password.isNotBlank()) {
@@ -96,6 +104,7 @@ fun LoginScreen(navController: NavHostController) {
 
             Spacer(Modifier.height(16.dp))
 
+            // Register Navigation
             TextButton(onClick = { navController.navigate("register") }) {
                 Text("Don't have an account? Register")
             }

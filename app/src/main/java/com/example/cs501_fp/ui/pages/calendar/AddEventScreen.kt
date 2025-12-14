@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/calendar/AddEventScreen.kt
+// A form screen for manually adding an event, supporting Image Capture and Ticketmaster Search.
+
 package com.example.cs501_fp.ui.pages.calendar
 
 import android.annotation.SuppressLint
@@ -27,9 +30,11 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.Coil
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
@@ -45,10 +51,8 @@ import com.example.cs501_fp.viewmodel.CalendarViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
-import kotlin.math.abs
-import androidx.compose.ui.draw.clip
-import coil.Coil
 import java.io.File
+import kotlin.math.abs
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,16 +65,23 @@ fun AddEventScreen(
 ) {
     val context = LocalContext.current
 
+    // Form State
     var title by remember { mutableStateOf("") }
     var venue by remember { mutableStateOf("") }
     var dateText by remember { mutableStateOf("") }
     var timeText by remember { mutableStateOf("") }
     var seat by remember { mutableStateOf("") }
     var price by remember { mutableStateOf("") }
+
+    // Metadata from Search
     var officialImageUrl by remember { mutableStateOf<String?>(null) }
     var tmId by remember { mutableStateOf<String?>(null) }
+
+    // Image Handling State
     val tempPhotoUris = remember { mutableStateListOf<Uri>() }
     val tempBitmaps = remember { mutableStateListOf<Bitmap>() }
+
+    // Temporary file for camera output
     val tempCameraUri = remember {
         val file = File(context.cacheDir, "camera_photo_${System.currentTimeMillis()}.jpg")
         androidx.core.content.FileProvider.getUriForFile(
@@ -80,9 +91,11 @@ fun AddEventScreen(
         )
     }
 
+    // Search & Validation State
     val searchResults by viewModel.searchResults.collectAsState()
     var priceError by remember { mutableStateOf(false) }
 
+    // Dialogs & Pickers
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
     var showTimePicker by remember { mutableStateOf(false) }
@@ -90,6 +103,8 @@ fun AddEventScreen(
     var showConflictDialog by remember { mutableStateOf(false) }
     val existingEvents by viewModel.events.collectAsState(initial = emptyList())
 
+
+    // --- Permission & Activity Launcher ---
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
@@ -113,6 +128,8 @@ fun AddEventScreen(
         if (uri != null) tempPhotoUris.add(uri)
     }
 
+
+    // --- Helper Functions ---
     fun doSave() {
         val savedPaths = mutableListOf<String>()
         tempPhotoUris.forEach { uri ->
@@ -165,6 +182,8 @@ fun AddEventScreen(
         if (hasConflict) showConflictDialog = true else doSave()
     }
 
+
+    // --- Dialogs UI ---
     if (showConflictDialog) {
         AlertDialog(
             onDismissRequest = { showConflictDialog = false },
@@ -198,6 +217,8 @@ fun AddEventScreen(
         )
     }
 
+
+    // --- Main UI Layout ---
     Scaffold(
         topBar = {
             TopAppBar(
@@ -220,6 +241,7 @@ fun AddEventScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Title Input (with auto complete search)
             Box(modifier = Modifier
                 .fillMaxWidth()
                 .zIndex(1f)) {
@@ -230,6 +252,7 @@ fun AddEventScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+                // Dropdown for search results
                 if (searchResults.isNotEmpty()) {
                     ElevatedCard(
                         modifier = Modifier
@@ -260,6 +283,7 @@ fun AddEventScreen(
 
             OutlinedTextField(value = venue, onValueChange = { venue = it }, label = { Text("Venue") }, modifier = Modifier.fillMaxWidth())
 
+            // Date & Time Pickers
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = dateText, onValueChange = {}, label = { Text("Date") }, modifier = Modifier.weight(1f), readOnly = true,
@@ -277,6 +301,7 @@ fun AddEventScreen(
                 )
             }
 
+            // Seat & Price
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = seat, onValueChange = { seat = it }, label = { Text("Seat") }, modifier = Modifier.weight(1f))
                 OutlinedTextField(
@@ -285,11 +310,13 @@ fun AddEventScreen(
                 )
             }
 
-            Divider()
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
+            // Media Attachment Section
             Text("Add Photos / Ticket Stubs", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 
+                // Camera Button
                 OutlinedButton(onClick = {
                     val permissionCheck = ContextCompat.checkSelfPermission(
                         context,
@@ -304,11 +331,13 @@ fun AddEventScreen(
                     Icon(Icons.Default.PhotoCamera, null); Spacer(Modifier.width(8.dp)); Text("Camera")
                 }
 
+                // Gallery Button
                 OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
                     Icon(Icons.Default.AddPhotoAlternate, null); Spacer(Modifier.width(8.dp)); Text("Gallery")
                 }
             }
 
+            // Preview selected images
             if (tempPhotoUris.isNotEmpty() || tempBitmaps.isNotEmpty()) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tempPhotoUris) { uri ->
@@ -337,11 +366,11 @@ fun AddEventScreen(
                     }
                 }
             }
-
             Spacer(Modifier.height(24.dp))
         }
     }
 
+    // Clean up temporary files when leaving screen
     DisposableEffect(Unit) {
         onDispose {
             android.util.Log.d("MEMORY_CLEANUP", "AddEventScreen is being disposed. Clearing temp images")

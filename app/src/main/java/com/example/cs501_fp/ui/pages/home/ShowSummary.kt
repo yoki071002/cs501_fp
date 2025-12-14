@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/home/ShowSummary.kt
+// A simplified UI model representing a show/event for the Home Screen.
+
 package com.example.cs501_fp.ui.pages.home
 
 import java.time.LocalDate

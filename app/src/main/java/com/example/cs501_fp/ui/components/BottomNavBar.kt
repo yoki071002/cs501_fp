@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/components/BottomNavBar.kt
+// A reusable UI component for the bottom navigation bar
+
 package com.example.cs501_fp.ui.components
 
 import androidx.compose.material3.Icon

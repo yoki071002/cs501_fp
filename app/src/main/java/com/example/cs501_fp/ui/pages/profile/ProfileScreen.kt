@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/profile/ProfileScreen.kt
+// The Settings/Profile Hub screen allowing users to toggle themes, clear cache, and sign out
+
 package com.example.cs501_fp.ui.pages.profile
 
 import android.widget.Toast
@@ -14,7 +17,6 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -38,7 +41,7 @@ import com.example.cs501_fp.viewmodel.ProfileViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
 import com.google.firebase.auth.FirebaseAuth
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun ProfileScreen(
     navController: NavHostController,
@@ -107,6 +110,7 @@ fun ProfileScreen(
         )
     }
 
+    // Settings list layout
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -242,8 +246,8 @@ fun ProfileScreen(
     }
 }
 
-// ------ 辅助组件：让代码更整洁 ------
 
+// --- Helper Components ---
 @Composable
 fun SettingsSection(
     title: String,

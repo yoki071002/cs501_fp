@@ -1,8 +1,12 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/home/HomeScreen.kt
+// The primary landing screen of the app, containing features:
+// 1. "Daily Musical Pick": Integrated with iTunes API for audio previews.
+// 2. "Weekly Schedule": Integrated with Ticketmaster API to show upcoming Broadway shows.
+
 package com.example.cs501_fp.ui.pages.home
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import coil.compose.AsyncImage
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cs501_fp.viewmodel.HomeViewModel
+import coil.compose.AsyncImage
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -74,6 +79,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(vertical = 16.dp)
         ) {
+            // Daily Pick
             item {
                 if (isLoading) {
                     LoadingBannerPlaceholder()
@@ -90,6 +96,7 @@ fun HomeScreen(
                 }
             }
 
+            // Weekly Shows
             item {
                 SectionHeader(
                     title = "Shows This Week",
@@ -146,8 +153,8 @@ fun HomeScreen(
     }
 }
 
-/* ----------------------------- Components ----------------------------- */
 
+// --- Daily Pick ---
 @Composable
 fun LoadingBannerPlaceholder() {
     Box(
@@ -162,48 +169,6 @@ fun LoadingBannerPlaceholder() {
             CircularProgressIndicator(modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
             Spacer(Modifier.height(8.dp))
             Text("Loading Daily Pick...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-private fun DailyShowsItem(
-    date: LocalDate,
-    shows: List<ShowSummary>,
-    onShowClick: (ShowSummary) -> Unit
-) {
-    var isExpanded by remember { mutableStateOf(false) }
-
-    Column {
-        Card(
-            onClick = { isExpanded = !isExpanded },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Expand or collapse"
-                )
-            }
-        }
-
-        AnimatedVisibility(visible = isExpanded) {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
-                shows.forEach { show ->
-                    ShowCard(show = show, onClick = { onShowClick(show) })
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
         }
     }
 }
@@ -280,6 +245,8 @@ private fun DailyPickBanner(
     }
 }
 
+
+// --- Weekly Shows Listings ---
 @Composable
 private fun SectionHeader(title: String, isPrevEnabled: Boolean, onPrev: () -> Unit, onNext: () -> Unit) {
     Row(
@@ -332,6 +299,48 @@ private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
                     show.dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                     style = MaterialTheme.typography.bodySmall
                 )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun DailyShowsItem(
+    date: LocalDate,
+    shows: List<ShowSummary>,
+    onShowClick: (ShowSummary) -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Column {
+        Card(
+            onClick = { isExpanded = !isExpanded },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier.padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Expand or collapse"
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = isExpanded) {
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+                shows.forEach { show ->
+                    ShowCard(show = show, onClick = { onShowClick(show) })
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }

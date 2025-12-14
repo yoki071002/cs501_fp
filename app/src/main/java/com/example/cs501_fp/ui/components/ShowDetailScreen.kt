@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/components/ShowDetailScreen.kt
+// Displays detailed info for a Ticketmaster event and handles the "Add to Wallet" logic with conflict detection.
+
 package com.example.cs501_fp.ui.components
 
 import android.os.Build
@@ -57,6 +60,8 @@ fun ShowDetailScreen(
         viewModel.loadShowDetail(showId)
     }
 
+
+    // --- Helper Functions ---
     fun saveEventToWallet(event: UserEvent) {
         calendarViewModel.addEvent(event)
         isAdded = true
@@ -79,6 +84,8 @@ fun ShowDetailScreen(
         } catch (e: Exception) { 0 }
     }
 
+
+    // --- Dialogs ---
     if (showConflictDialog && pendingEvent != null) {
         AlertDialog(
             onDismissRequest = { showConflictDialog = false },
@@ -167,6 +174,8 @@ fun ShowDetailScreen(
         )
     }
 
+
+    // --- Main UI ---
     if (show == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()

@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/profile/UserProfileScreen.kt
+// Displays a public or private user profile with editing capabilities (Bio, Avatar, Favorites)
+
 package com.example.cs501_fp.ui.pages.profile
 
 import android.net.Uri
@@ -70,6 +73,8 @@ fun UserProfileScreen(
         if (uri != null) viewModel.updateAvatar(uri)
     }
 
+
+    // --- Screen Scaffold ---
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -109,7 +114,7 @@ fun UserProfileScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                // ================= HEADER =================
+                // --- Profile Header ---
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -230,7 +235,8 @@ fun UserProfileScreen(
 
                 HorizontalDivider()
 
-                // ================= CONTENT =================
+
+                // --- User Content ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

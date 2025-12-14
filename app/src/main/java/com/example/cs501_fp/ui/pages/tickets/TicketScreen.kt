@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/tickets/TicketScreen.kt
+// The main screen for the Tickets tab, managing the Ticket Wallet and Analytics Dashboard
+
 package com.example.cs501_fp.ui.pages.tickets
 
 import android.Manifest
@@ -21,12 +24,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.*
@@ -61,11 +65,10 @@ import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.AnalyticsViewModel
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.MonthlyStat
-import kotlinx.coroutines.launch
 import java.io.File
 
-/** ------------------------ Ticket Main Screen ------------------------ */
 
+// --- Main Screen & Toggle ---
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +109,6 @@ fun TicketScreen(
     }
 }
 
-/** ------------------------ Segmented Toggle ------------------------ */
 @Composable
 fun TicketToggle(selectedIndex: Int, onSelect: (Int) -> Unit) {
     Row(
@@ -145,7 +147,8 @@ fun ToggleOption(text: String, isSelected: Boolean, modifier: Modifier, onClick:
     }
 }
 
-/** ------------------------ ANALYTICS CONTENT ------------------------ */
+
+// --- Analytics Dashboard ---
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AnalyticsContent(viewModel: AnalyticsViewModel) {
@@ -188,13 +191,13 @@ fun AnalyticsContent(viewModel: AnalyticsViewModel) {
         ) {
             StatisticCard(
                 title = "Lifetime Spent",
-                value = "\$${"%.0f".format(lifetimeTotal)}",
+                value = "$${"%.0f".format(lifetimeTotal)}",
                 icon = Icons.Default.Savings,
                 modifier = Modifier.weight(1f)
             )
             StatisticCard(
                 title = "Avg Ticket Price",
-                value = "\$${"%.0f".format(avgPrice)}",
+                value = "$${"%.0f".format(avgPrice)}",
                 icon = Icons.Default.Analytics,
                 modifier = Modifier.weight(1f)
             )
@@ -204,6 +207,30 @@ fun AnalyticsContent(viewModel: AnalyticsViewModel) {
     }
 }
 
+@Composable
+fun SetBudgetDialog(currentBudget: Double, onDismiss: () -> Unit, onSave: (Double) -> Unit) {
+    var text by remember { mutableStateOf(currentBudget.toString()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Set Monthly Budget") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text("Amount ($)") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            Button(onClick = { onSave(text.toDoubleOrNull() ?: currentBudget) }) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+
+// -- Analytics Visualizations ---
 @Composable
 fun StatisticCard(
     title: String,
@@ -257,13 +284,13 @@ fun BudgetCard(budget: Double, spent: Double, onEditClick: () -> Unit) {
             // Numbers
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
-                    "\$${"%.0f".format(spent)}",
+                    "$${"%.0f".format(spent)}",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
                     color = animatedColor
                 )
                 Text(
-                    " / \$${"%.0f".format(budget)}",
+                    " / $${"%.0f".format(budget)}",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
@@ -299,13 +326,13 @@ fun BudgetCard(budget: Double, spent: Double, onEditClick: () -> Unit) {
             val remaining = budget - spent
             if (remaining >= 0) {
                 Text(
-                    "\$${"%.0f".format(remaining)} remaining",
+                    "$${"%.0f".format(remaining)} remaining",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
             } else {
                 Text(
-                    "Over budget by \$${"%.0f".format(-remaining)}",
+                    "Over budget by $${"%.0f".format(-remaining)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold
@@ -414,29 +441,8 @@ fun TrendChartCard(trends: List<MonthlyStat>) {
     }
 }
 
-@Composable
-fun SetBudgetDialog(currentBudget: Double, onDismiss: () -> Unit, onSave: (Double) -> Unit) {
-    var text by remember { mutableStateOf(currentBudget.toString()) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Set Monthly Budget") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("Amount ($)") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
-            )
-        },
-        confirmButton = {
-            Button(onClick = { onSave(text.toDoubleOrNull() ?: currentBudget) }) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    )
-}
 
-/** ------------------------ TICKET LIST CONTENT ------------------------ */
+// --- Ticket List ---
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TicketListContent(viewModel: CalendarViewModel) {
@@ -476,7 +482,8 @@ fun TicketListContent(viewModel: CalendarViewModel) {
     }
 }
 
-/** ------------------------ FLIP CARD COMPONENTS ------------------------ */
+
+// --- Flip & Ticket Details
 @Composable
 fun FlipTicketCard(event: UserEvent, viewModel: CalendarViewModel) {
     var rotated by remember { mutableStateOf(false) }
@@ -652,7 +659,6 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
     }
 }
 
-/** ------------------------ Back Side (Details & Notes) ------------------------ */
 @Composable
 fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
     val context = LocalContext.current
@@ -739,7 +745,7 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowLeft,
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                             contentDescription = "Prev",
                             tint = if (currentPage == 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                         )
@@ -753,7 +759,7 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = "Next",
                             tint = if (currentPage == 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
                         )
@@ -857,7 +863,8 @@ fun DetailItem(label: String, value: String) {
     }
 }
 
-/** ------------------------ Edit Notes Dialog ------------------------ */
+
+// --- Edit Repo ---
 @Composable
 fun EditRepoDialog(
     initialNotes: String,
@@ -880,7 +887,6 @@ fun EditRepoDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. 私有笔记
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -891,7 +897,6 @@ fun EditRepoDialog(
                     maxLines = 5
                 )
 
-                // 2. 一键复制按钮
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
@@ -905,7 +910,6 @@ fun EditRepoDialog(
                     }
                 }
 
-                // 3. 公开剧评
                 OutlinedTextField(
                     value = publicReview,
                     onValueChange = { publicReview = it },
@@ -916,7 +920,6 @@ fun EditRepoDialog(
                     maxLines = 5
                 )
 
-                // 4. 公开开关
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

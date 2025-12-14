@@ -1,20 +1,19 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/navigation/NavGraph.kt
+// The central Navigation Graph defining all screens, routes, and bottom bar logic
+
 package com.example.cs501_fp.ui.navigation
 
-import com.google.firebase.auth.FirebaseAuth
-import com.example.cs501_fp.ui.pages.auth.LoginScreen
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Theaters
 import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.AccountCircle
-import com.example.cs501_fp.ui.pages.community.CommunityScreen
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -26,7 +25,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.cs501_fp.ui.components.BottomNavBar
 import com.example.cs501_fp.ui.components.ShowDetailScreen
+import com.example.cs501_fp.ui.pages.auth.LoginScreen
+import com.example.cs501_fp.ui.pages.auth.RegisterScreen
 import com.example.cs501_fp.ui.pages.calendar.*
+import com.example.cs501_fp.ui.pages.community.CommunityScreen
 import com.example.cs501_fp.ui.pages.home.HomeScreen
 import com.example.cs501_fp.ui.pages.profile.UserProfileScreen
 import com.example.cs501_fp.ui.pages.profile.ProfileScreen
@@ -34,10 +36,7 @@ import com.example.cs501_fp.ui.pages.tickets.TicketScreen
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
-import com.example.cs501_fp.ui.pages.auth.RegisterScreen
-import androidx.compose.runtime.getValue
-import androidx.navigation.compose.currentBackStackEntryAsState
-
+import com.google.firebase.auth.FirebaseAuth
 
 data class NavItem(val label: String, val icon: ImageVector, val route: String)
 
@@ -47,8 +46,7 @@ fun NavGraph(
     navController: NavHostController = rememberNavController(),
     themeViewModel: ThemeViewModel
 ) {
-
-    /** ----------- Bottom Navigation Items ----------- */
+    // --- Bottom Navigation Items ---
     val items = listOf(
         NavItem("Home", Icons.Filled.Home, "home"),
         NavItem("Calendar", Icons.Filled.DateRange, "calendar"),
@@ -56,7 +54,7 @@ fun NavGraph(
         NavItem("Tickets", Icons.Filled.Theaters, "tickets")
     )
 
-    /** ----------- ViewModels ----------- */
+    // --- ViewModels ---
     val homeVM: HomeViewModel = viewModel()
     val calendarVM: CalendarViewModel = viewModel()
 
@@ -85,13 +83,12 @@ fun NavGraph(
             }
         }
     ) { inner ->
-
         NavHost(
             navController = navController,
             startDestination = startDestination,
             modifier = Modifier.padding(inner)
         ) {
-            /** ---------------- LOGIN ---------------- */
+            // --- Login & Register ---
             composable("login") {
                 LoginScreen(navController = navController)
             }
@@ -100,7 +97,8 @@ fun NavGraph(
                 RegisterScreen(navController = navController)
             }
 
-            /** ---------------- HOME ---------------- */
+
+            // --- Home ---
             composable("home") {
                 LaunchedEffect(Unit) {
                     val user = FirebaseAuth.getInstance().currentUser
@@ -118,7 +116,8 @@ fun NavGraph(
                 ShowDetailScreen(showId = showId, onBack = { navController.popBackStack() })
             }
 
-            /** ---------------- CALENDAR ---------------- */
+
+            // --- Calendar ---
             composable("calendar") {
                 CalendarScreen(
                     viewModel = calendarVM,
@@ -126,7 +125,6 @@ fun NavGraph(
                 )
             }
 
-            /** Add new event */
             composable("add_event") {
                 AddEventScreen(
                     onSave = { event ->
@@ -137,7 +135,6 @@ fun NavGraph(
                 )
             }
 
-            /** Single event detail */
             composable("event_detail/{eventId}") { backStack ->
                 val eventId = backStack.arguments?.getString("eventId") ?: ""
                 EventDetailScreen(
@@ -147,7 +144,6 @@ fun NavGraph(
                 )
             }
 
-            /** Multiple events on same day */
             composable("events_on_day/{dateText}") { backStack ->
                 val dateText = backStack.arguments?.getString("dateText") ?: ""
                 DayEventListScreen(
@@ -157,12 +153,14 @@ fun NavGraph(
                 )
             }
 
-            /** ---------------- TICKETS ---------------- */
+
+            // --- Tickets ---
             composable("tickets") {
                 TicketScreen(onProfileClick = { navController.navigate("profile") })
             }
 
-            /** ---------------- COMMUNITY ---------------- */
+
+            // --- Community & Personal Profile ---
             composable("community") {
                 CommunityScreen(
                     onProfileClick = { navController.navigate("profile") },
@@ -179,7 +177,8 @@ fun NavGraph(
                 )
             }
 
-            /** ---------------- PROFILE ---------------- */
+
+            // --- Public Profile ---
             composable(
                 route = "user_profile?userId={userId}",
                 arguments = listOf(

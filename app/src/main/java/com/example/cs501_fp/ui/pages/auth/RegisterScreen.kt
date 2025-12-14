@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/auth/RegisterScreen.kt
+// The registration screen for creating new accounts and initializing user profiles
+
 package com.example.cs501_fp.ui.pages.auth
 
 import android.widget.Toast
@@ -31,9 +34,11 @@ fun RegisterScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // Header
         Text("Create Account", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(32.dp))
 
+        // Username Input
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
@@ -43,6 +48,7 @@ fun RegisterScreen(navController: NavHostController) {
         )
         Spacer(Modifier.height(16.dp))
 
+        // Email Input
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -52,6 +58,7 @@ fun RegisterScreen(navController: NavHostController) {
         )
         Spacer(Modifier.height(16.dp))
 
+        // Password Input
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -67,6 +74,7 @@ fun RegisterScreen(navController: NavHostController) {
             Spacer(Modifier.height(16.dp))
         }
 
+        // Sign Up Button
         Button(
             onClick = {
                 if (username.isBlank()) {
@@ -98,6 +106,7 @@ fun RegisterScreen(navController: NavHostController) {
             Text("Sign Up")
         }
 
+        // Navigation to Login
         Spacer(Modifier.height(16.dp))
         TextButton(onClick = { navController.popBackStack() }) {
             Text("Already have an account? Log In")

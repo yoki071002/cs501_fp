@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/ui/pages/community/CommunityScreen.kt
+// The social feed screen allowing users to view, search, like, and comment on public events.
+
 package com.example.cs501_fp.ui.pages.community
 
 import android.os.Build
@@ -53,18 +56,23 @@ fun CommunityScreen(
     onProfileClick: () -> Unit,
     onUserClick: (String) -> Unit
 ) {
+    // State
     val posts by viewModel.publicPosts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val sortOption by viewModel.sortOption.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
+    // Bottom Sheet for Comments
     var showBottomSheet by remember { mutableStateOf(false) }
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     var selectedPostOwnerId by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    // Image Zoom Logic
     var viewingImageUrl by remember { mutableStateOf<String?>(null) }
 
+
+    // --- Main UI Structure ---
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -78,6 +86,7 @@ fun CommunityScreen(
         }
     ) { inner ->
         Column(modifier = Modifier.padding(inner)) {
+            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = {
@@ -92,7 +101,7 @@ fun CommunityScreen(
                 singleLine = true,
                 shape = RoundedCornerShape(50)
             )
-
+            // Filter Chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -124,7 +133,7 @@ fun CommunityScreen(
                     } else null
                 )
             }
-
+            // Feed Content
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -161,7 +170,7 @@ fun CommunityScreen(
                 }
             }
         }
-
+        // Comment Bottom Sheet
         if (showBottomSheet && selectedPostId != null) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
@@ -174,7 +183,7 @@ fun CommunityScreen(
                 )
             }
         }
-
+        // Full Screen Image Dialog
         if (viewingImageUrl != null) {
             Dialog(onDismissRequest = { viewingImageUrl = null }) {
                 Box(
@@ -208,6 +217,8 @@ fun CommunityScreen(
     }
 }
 
+
+// --- Post Card Components (single social feed item) ---
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CommunityPostCard(
@@ -297,7 +308,7 @@ fun CommunityPostCard(
 
             Spacer(Modifier.height(8.dp))
 
-            val content = if (post.publicReview.isNotBlank()) post.publicReview else post.notes
+            val content = post.publicReview.ifBlank { post.notes }
             if (content.isNotBlank()) {
                 ExpandableText(text = content)
             }
@@ -360,6 +371,8 @@ fun CommunityPostCard(
     }
 }
 
+
+// --- Helper UI Components ---
 @Composable
 fun ExpandableText(text: String) {
     var isExpanded by remember { mutableStateOf(false) }
@@ -410,6 +423,8 @@ fun getRelativeTimeDisplay(dateText: String): String {
     }
 }
 
+
+// --- Comment System ---
 @Composable
 fun CommentSection(
     eventId: String,

@@ -4,7 +4,7 @@
 package com.example.cs501_fp.data.model
 
 data class TicketmasterResponse(
-    val embedded: EmbeddedEvents? = null
+    val _embedded: EmbeddedEvents? = null
 )
 
 data class EmbeddedEvents(
@@ -18,7 +18,7 @@ data class TicketmasterEvent(
     val info: String? = null,
     val images: List<TicketmasterImage>? = null,
     val dates: TicketmasterDates? = null,
-    val embedded: EmbeddedVenue? = null
+    val _embedded: EmbeddedVenue? = null
 )
 
 data class TicketmasterImage(
