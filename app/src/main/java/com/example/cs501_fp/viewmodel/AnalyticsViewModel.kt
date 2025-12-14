@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/AnalyticsViewModel.kt
+// Computes financial statistics (Total Spent, Budget, Trends) based on the user's ticket history.
+
 package com.example.cs501_fp.viewmodel
 
 import android.app.Application

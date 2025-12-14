@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/CommunityViewModel.kt
+// Manages the social feed, handling search, sorting, likes, and comments
+
 package com.example.cs501_fp.viewmodel
 
 import androidx.lifecycle.ViewModel

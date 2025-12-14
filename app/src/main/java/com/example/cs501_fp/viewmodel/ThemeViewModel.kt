@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/ThemeViewModel.kt
+// Manages the global application theme (dark/light)
+
 package com.example.cs501_fp.viewmodel
 
 import androidx.lifecycle.ViewModel

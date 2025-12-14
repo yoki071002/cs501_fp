@@ -10,9 +10,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.example.cs501_fp.data.local.dao.UserEventDao
-import com.example.cs501_fp.data.local.dao.ExperienceDao
 import com.example.cs501_fp.data.local.entity.UserEvent
-import com.example.cs501_fp.data.local.entity.Experience
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
@@ -31,8 +29,7 @@ class Converters {
 
 @Database(
     entities = [
-        UserEvent::class,
-        Experience::class
+        UserEvent::class
     ],
     version = 11,
     exportSchema = false
@@ -41,7 +38,6 @@ class Converters {
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun userEventDao(): UserEventDao
-    abstract fun experienceDao(): ExperienceDao
 
     companion object {
         @Volatile

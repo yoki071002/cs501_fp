@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/ProfileViewModel.kt
+// Manages User Profile data (Avatar, Bio, Username) and handles Logout cleanup.
+
 package com.example.cs501_fp.viewmodel
 
 import android.app.Application
@@ -19,7 +22,7 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     private val auth = FirebaseAuth.getInstance()
 
     private val db = AppDatabase.getInstance(application)
-    private val localRepo = LocalRepository(db.userEventDao(), db.experienceDao())
+    private val localRepo = LocalRepository(db.userEventDao())
 
     private val _profile = MutableStateFlow(UserProfile())
     val profile: StateFlow<UserProfile> = _profile

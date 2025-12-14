@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/util/ImageUtils.kt
+// Helper functions to save images into the app's internal storage for permanent access
+
 package com.example.cs501_fp.util
 
 import android.content.Context

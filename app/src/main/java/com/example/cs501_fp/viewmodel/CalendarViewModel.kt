@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/CalendarViewModel.kt
+// The central ViewModel managing the User's Ticket Wallet, Cloud Sync, and Event Searching
+
 package com.example.cs501_fp.viewmodel
 
 import android.app.Application
@@ -10,12 +13,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.cs501_fp.data.local.AppDatabase
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.data.model.UserProfile
+import com.example.cs501_fp.data.model.TicketmasterEvent
 import com.example.cs501_fp.data.repository.UserRepository
 import com.example.cs501_fp.data.repository.FirestoreRepository
 import com.example.cs501_fp.data.repository.LocalRepository
-import com.google.firebase.auth.FirebaseAuth
-import com.example.cs501_fp.data.model.TicketmasterEvent
 import com.example.cs501_fp.data.repository.TicketmasterRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -32,32 +35,28 @@ class CalendarViewModel(
     application: Application
 ) : AndroidViewModel(application) {
 
-    /* ---------------------------------------------------------
-     *                   INIT DATABASE & REPOSITORY
-     * --------------------------------------------------------- */
+    // --- Dependencies & Initialization ---
     private val database = AppDatabase.getInstance(application)
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
     private val localRepo = LocalRepository(
-        userEventDao = database.userEventDao(),
-        experienceDao = database.experienceDao()
+        userEventDao = database.userEventDao()
     )
 
     private val cloudRepo = FirestoreRepository()
     private val ticketRepo = TicketmasterRepository()
     private val userRepo = UserRepository()
 
-    /* ---------------------------------------------------------
-     *                   SEARCH STATE
-     * --------------------------------------------------------- */
+
+    // --- Search Results ---
     private val _searchResults = MutableStateFlow<List<TicketmasterEvent>>(emptyList())
     val searchResults: StateFlow<List<TicketmasterEvent>> = _searchResults
 
     fun searchEvents(query: String) {
         viewModelScope.launch {
             if (query.length > 2) {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     _searchResults.value = ticketRepo.searchEventsByKeyword(query)
                 }
             } else {
@@ -70,9 +69,8 @@ class CalendarViewModel(
         _searchResults.value = emptyList()
     }
 
-    /* ---------------------------------------------------------
-     *                   USER PROFILE STATE
-     * --------------------------------------------------------- */
+
+    // --- User Profile ---
     private val _currentUserProfile = MutableStateFlow<UserProfile?>(null)
     val currentUserProfile: StateFlow<UserProfile?> = _currentUserProfile
 
@@ -90,11 +88,8 @@ class CalendarViewModel(
         }
     }
 
-    /* ---------------------------------------------------------
-     *                   FLOW: All Events
-     * --------------------------------------------------------- */
-    // viewmodel/CalendarViewModel.kt
 
+    // --- Flow ---
     @RequiresApi(Build.VERSION_CODES.O)
     val events: StateFlow<List<UserEvent>> = localRepo.getAllEvents()
         .onEach { list ->
@@ -114,7 +109,6 @@ class CalendarViewModel(
             initialValue = emptyList()
         )
 
-
     val totalSpent: StateFlow<Double?> = database.userEventDao().getTotalSpent()
         .stateIn(
             scope = viewModelScope,
@@ -122,9 +116,8 @@ class CalendarViewModel(
             initialValue = 0.0
         )
 
-    /* ---------------------------------------------------------
-     *                   ADD / UPDATE / DELETE
-     * --------------------------------------------------------- */
+
+    // --- CRUD Operations ---
     fun addEvent(event: UserEvent) {
         viewModelScope.launch {
             val currentUser = FirebaseAuth.getInstance().currentUser
@@ -168,7 +161,6 @@ class CalendarViewModel(
         }
     }
 
-
     fun deleteEvent(event: UserEvent) {
         viewModelScope.launch {
             localRepo.deleteEvent(event)
@@ -182,9 +174,8 @@ class CalendarViewModel(
         }
     }
 
-    /* ---------------------------------------------------------
-     *              SYNC CLOUD → LOCAL
-     * --------------------------------------------------------- */
+
+    // --- Sync ---
     fun syncFromCloud() {
         viewModelScope.launch {
             val user = FirebaseAuth.getInstance().currentUser ?: return@launch
@@ -203,9 +194,8 @@ class CalendarViewModel(
         }
     }
 
-    /* ---------------------------------------------------------
-     *                   SOCIAL HEADCOUNTS
-     * --------------------------------------------------------- */
+
+    // --- Social Headcounts ---
     private val _headcounts = MutableStateFlow<Map<String, Long>>(emptyMap())
     val headcounts: StateFlow<Map<String, Long>> = _headcounts
 

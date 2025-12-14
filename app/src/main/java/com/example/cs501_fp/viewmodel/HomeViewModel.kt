@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/HomeViewModel.kt
+// Manages the Home Screen logic: Daily Musical Pick (iTunes) and Weekly Show Listings (Ticketmaster).
+
 package com.example.cs501_fp.viewmodel
 
 import android.content.Context
@@ -51,6 +54,8 @@ class HomeViewModel : ViewModel() {
         loadData()
     }
 
+
+    // --- Weekly Calendar Navigation ---
     fun nextWeek() {
         _currentWeekStart.value = _currentWeekStart.value.plusWeeks(1)
         loadShowsThisWeek()
@@ -63,6 +68,8 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+
+    // --- Audio Player Logic ---
     fun togglePlayPreview(context: Context, url: String) {
         if (url.isEmpty()) return
 
@@ -139,6 +146,8 @@ class HomeViewModel : ViewModel() {
         stopPreview()
     }
 
+
+    // --- Data Fetching ---
     fun loadData() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -213,7 +222,7 @@ class HomeViewModel : ViewModel() {
                     val summary = ShowSummary(
                         id = event.id ?: "",
                         title = event.name ?: "Untitled",
-                        venue = event._embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
+                        venue = event.embedded?.venues?.firstOrNull()?.name ?: "Unknown Theatre",
                         dateTime = LocalDate.parse(dateStr),
                         priceFrom = 100,
                         imageUrl = event.images?.firstOrNull()?.url

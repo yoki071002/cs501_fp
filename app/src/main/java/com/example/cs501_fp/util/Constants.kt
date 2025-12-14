@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/util/Constants.kt
+// Holds global constants used throughout the app (API key / URL)
+
 package com.example.cs501_fp.util
 
 object Constants {

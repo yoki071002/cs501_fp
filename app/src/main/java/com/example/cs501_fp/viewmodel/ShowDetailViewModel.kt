@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/viewmodel/ShowDetailViewModel.kt
+// Fetches detailed metadata for a specific event from Ticketmaster API
+
 package com.example.cs501_fp.viewmodel
 
 import android.os.Build

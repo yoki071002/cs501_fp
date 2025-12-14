@@ -5,7 +5,6 @@ package com.example.cs501_fp.data.repository
 
 import android.util.Log
 import com.example.cs501_fp.data.local.entity.UserEvent
-import com.example.cs501_fp.data.local.entity.Experience
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.DocumentReference
@@ -98,32 +97,6 @@ class FirestoreRepository {
             Log.e("FirestoreRepo", "Error counting heads", e)
             0
         }
-    }
-
-
-    // --- Experience CRUD ---
-    suspend fun uploadExperience(exp: Experience) {
-        val doc = userDoc() ?: return
-        doc.collection("experience")
-            .document(exp.id.toString())
-            .set(exp)
-            .await()
-    }
-
-    suspend fun deleteExperience(expId: String) {
-        val doc = userDoc() ?: return
-        doc.collection("experience")
-            .document(expId)
-            .delete()
-            .await()
-    }
-
-    suspend fun getAllExperience(): List<Experience> {
-        val doc = userDoc() ?: return emptyList()
-        return doc.collection("experience")
-            .get()
-            .await()
-            .toObjects(Experience::class.java)
     }
 
 
