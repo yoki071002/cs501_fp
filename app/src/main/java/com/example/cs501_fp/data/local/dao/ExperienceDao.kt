@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/local/dao/ExperienceDao.kt
+// Date Access Object (DAO) for Experience entity, handling local database CRUD operations
+
 package com.example.cs501_fp.data.local.dao
 
 import androidx.room.*

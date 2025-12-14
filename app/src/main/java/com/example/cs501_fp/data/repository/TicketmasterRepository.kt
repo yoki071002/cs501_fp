@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/repository/TicketmasterRepository.kt
+// Handles network requests to the Ticketmaster Discovery API to fetch event lists and details
+
 package com.example.cs501_fp.data.repository
 
 import android.os.Build
@@ -40,7 +43,7 @@ class TicketmasterRepository {
                 sort = "date,asc"
             )
 
-            response._embedded?.events ?: emptyList()
+            response.embedded?.events ?: emptyList()
         } catch (e: Exception) {
             Log.e("TicketmasterRepo", "Error fetching events: ${e.message}")
             emptyList()
@@ -70,7 +73,7 @@ class TicketmasterRepository {
                 classificationName = "Theatre",
                 sort = "date,asc"
             )
-            response._embedded?.events ?: emptyList()
+            response.embedded?.events ?: emptyList()
         } catch (e: Exception) {
             emptyList()
         }

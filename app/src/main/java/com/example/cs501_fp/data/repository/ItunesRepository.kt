@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/repository/ItunesRepository.kt
+// Handles network requests to the iTunes Search API to fetch song previews for the 'Daily Pick'.
+
 package com.example.cs501_fp.data.repository
 
 import android.util.Log

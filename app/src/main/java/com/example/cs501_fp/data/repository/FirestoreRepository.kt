@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/repository/FirestoreRepository.kt
+// Handles all interactions with Firebase Firestore (Database) and Storage (Images).
+
 package com.example.cs501_fp.data.repository
 
 import android.util.Log
@@ -22,26 +25,21 @@ class FirestoreRepository {
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance()
 
-    /** 获取当前用户 DocumentReference，如果未登录返回 null */
     private fun userDoc(): DocumentReference? {
         val uid = auth.currentUser?.uid
         return uid?.let { db.collection("users").document(it) }
     }
 
-    /* --------------------------------------------------------
-     *                     EVENT CRUD
-     * -------------------------------------------------------- */
 
-    /** 上传或更新一个 Event */
+    // --- Event CRUD ---
     suspend fun uploadEvent(event: UserEvent) {
-        val doc = userDoc() ?: return   // 未登录 → 不同步，不崩溃
+        val doc = userDoc() ?: return
         doc.collection("events")
-            .document(event.id)        // event.id 是 String
+            .document(event.id)
             .set(event)
             .await()
     }
 
-    /** 删除一个 Event */
     suspend fun deleteEvent(eventId: String) {
         val doc = userDoc() ?: return
         doc.collection("events")
@@ -50,7 +48,6 @@ class FirestoreRepository {
             .await()
     }
 
-    /** 读取用户所有 Events（给同步用） */
     suspend fun getAllEvents(): List<UserEvent> {
         val doc = userDoc() ?: return emptyList()
         return doc.collection("events")
@@ -60,11 +57,7 @@ class FirestoreRepository {
     }
 
 
-    /* --------------------------------------------------------
-     *                     COMMUNITY FEATURES
-     * -------------------------------------------------------- */
-
-    /** 更新公开状态 */
+    // --- Community Features ---
     suspend fun togglePublicStatus(eventId: String, isPublic: Boolean) {
         val doc = userDoc() ?: return
         doc.collection("events")
@@ -72,13 +65,11 @@ class FirestoreRepository {
             .update("public", isPublic)
     }
 
-    /** 获取社区所有公开帖子 */
     fun getPublicEventsFlow(): Flow<List<UserEvent>> = callbackFlow {
         val query = db.collectionGroup("events")
             .whereEqualTo("public", true)
             .orderBy("dateText", Query.Direction.DESCENDING)
             .limit(50)
-
         val listener = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
                 close(error)
@@ -90,13 +81,9 @@ class FirestoreRepository {
                 trySend(events)
             }
         }
-
         awaitClose { listener.remove() }
     }
 
-    /**
-     * 查询某场演出（特定 ID + 特定日期）有多少人要去。
-     */
     suspend fun getHeadcount(tmId: String, dateText: String): Long {
         if (tmId.isBlank()) return 0
         return try {
@@ -113,13 +100,10 @@ class FirestoreRepository {
         }
     }
 
-    /* --------------------------------------------------------
-     *                     EXPERIENCE CRUD
-     * -------------------------------------------------------- */
 
+    // --- Experience CRUD ---
     suspend fun uploadExperience(exp: Experience) {
         val doc = userDoc() ?: return
-
         doc.collection("experience")
             .document(exp.id.toString())
             .set(exp)
@@ -128,7 +112,6 @@ class FirestoreRepository {
 
     suspend fun deleteExperience(expId: String) {
         val doc = userDoc() ?: return
-
         doc.collection("experience")
             .document(expId)
             .delete()
@@ -144,9 +127,7 @@ class FirestoreRepository {
     }
 
 
-    /* --------------------------------------------------------
-     *                     IMAGE UPLOAD (for community)
-     * -------------------------------------------------------- */
+    // --- Image Upload ---
     suspend fun uploadEventImage(eventId: String, uri: Uri): String? {
         val uid = auth.currentUser?.uid ?: return null
         val filename = "${System.currentTimeMillis()}.jpg"
@@ -161,9 +142,8 @@ class FirestoreRepository {
         }
     }
 
-    /* --------------------------------------------------------
-     *                     KUDOS & COMMENTS
-     * -------------------------------------------------------- */
+
+    // --- Kudos & Comments ---
     suspend fun toggleLike(eventId: String, currentUserId: String) {
         val docRef = db.collectionGroup("events").whereEqualTo("id", eventId).get().await().documents.firstOrNull()?.reference ?: return
 
@@ -240,5 +220,4 @@ class FirestoreRepository {
         }
         awaitClose { listener.remove() }
     }
-
 }

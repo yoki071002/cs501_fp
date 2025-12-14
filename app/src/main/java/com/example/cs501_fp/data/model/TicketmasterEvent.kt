@@ -1,7 +1,10 @@
+// File: app/src/main/java/com/example/cs501_fp/data/model/TicketmasterEvent.kt
+// Data models representing the complex nested JSON structure returned by the Ticketmaster API.
+
 package com.example.cs501_fp.data.model
 
 data class TicketmasterResponse(
-    val _embedded: EmbeddedEvents? = null
+    val embedded: EmbeddedEvents? = null
 )
 
 data class EmbeddedEvents(
@@ -15,7 +18,7 @@ data class TicketmasterEvent(
     val info: String? = null,
     val images: List<TicketmasterImage>? = null,
     val dates: TicketmasterDates? = null,
-    val _embedded: EmbeddedVenue? = null
+    val embedded: EmbeddedVenue? = null
 )
 
 data class TicketmasterImage(

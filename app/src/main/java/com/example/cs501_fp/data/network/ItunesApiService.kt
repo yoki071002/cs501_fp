@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/network/ItunesApiService.kt
+// Retrofit interface defining the endpoint for searching songs via iTunes API.
+
 package com.example.cs501_fp.data.network
 
 import com.example.cs501_fp.data.model.ItunesResponse

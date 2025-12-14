@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/local/UserPreferences.kt
+// Manages lightweight key-value storage for user settings like monthly budget.
+
 package com.example.cs501_fp.data.local
 
 import android.content.Context

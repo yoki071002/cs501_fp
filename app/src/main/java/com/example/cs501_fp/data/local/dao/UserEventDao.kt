@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/local/dao/UserEventDao.kt
+// Data Access Object (DAO) for the UserEvent entity, providing CRUD operations on the local Room database
+
 package com.example.cs501_fp.data.local.dao
 
 import androidx.room.*

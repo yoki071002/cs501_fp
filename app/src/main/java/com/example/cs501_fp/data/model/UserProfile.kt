@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/model/UserProfile.kt
+// Data model representing a user's profile information (Bio, Avatar, Favorites) stored in Firestore.
+
 package com.example.cs501_fp.data.model
 
 data class UserProfile(
