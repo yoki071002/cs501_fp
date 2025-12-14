@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/repository/LocalRepository.kt
+// Acts as a clean API for ViewModels to access local database operations
+
 package com.example.cs501_fp.data.repository
 
 import com.example.cs501_fp.data.local.dao.UserEventDao
@@ -10,37 +13,24 @@ class LocalRepository(
     private val userEventDao: UserEventDao,
     private val experienceDao: ExperienceDao
 ) {
-
-    /* ------------------------------------------------------
-     *                     USER EVENTS
-     * ------------------------------------------------------ */
-
-    /** 读取所有事件（实时监听 Flow） */
+    // --- User Events ---
     fun getAllEvents(): Flow<List<UserEvent>> =
         userEventDao.getAllEvents()
 
-    /** 本地添加 Event */
     suspend fun addEvent(event: UserEvent) =
         userEventDao.addEvent(event)
 
-    /** 本地删除 Event */
     suspend fun deleteEvent(event: UserEvent) =
         userEventDao.deleteEvent(event)
 
 
-    /* ------------------------------------------------------
-     *                     EXPERIENCE
-     * ------------------------------------------------------ */
-
-    /** 读取所有 Experience（Flow） */
+    // --- Experiences ---
     fun getAllExperiences(): Flow<List<Experience>> =
         experienceDao.getAll()
 
-    /** 本地添加 Experience */
     suspend fun addExperience(exp: Experience) =
         experienceDao.insertExperience(exp)
 
-    /** 本地删除 Experience */
     suspend fun deleteExperience(exp: Experience) =
         experienceDao.deleteExperience(exp)
 

@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/repository/UserRepository.kt
+// Manages user profile data (Bio, Avatar, Username) by interacting with Firestore and Firebase Storage.
+
 package com.example.cs501_fp.data.repository
 
 import android.net.Uri

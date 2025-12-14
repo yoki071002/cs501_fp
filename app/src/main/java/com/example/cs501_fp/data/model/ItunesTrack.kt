@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/model/ItunesTrack.kt
+// Data models used to parse JSON responses from the iTunes Search API (for musical song previews).
+
 package com.example.cs501_fp.data.model
 
 data class ItunesResponse(

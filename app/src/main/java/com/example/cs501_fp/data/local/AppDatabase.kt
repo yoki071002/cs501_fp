@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/local/AppDatabase.kt
+// The main database configuration. It acts as a container for two tables: 'user_events' and 'experiences'.
+
 package com.example.cs501_fp.data.local
 
 import android.content.Context

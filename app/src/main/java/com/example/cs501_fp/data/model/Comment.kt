@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/model/Comment.kt
+// Data model representing a user comment on a Community post.
+
 package com.example.cs501_fp.data.model
 
 data class Comment(

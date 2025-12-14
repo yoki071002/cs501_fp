@@ -1,3 +1,6 @@
+// File: app/src/main/java/com/example/cs501_fp/data/network/TicketmasterApiService.kt
+// Retrofit interface for fetching event data from the Ticketmaster Discovery API.
+
 package com.example.cs501_fp.data.network
 
 import com.example.cs501_fp.data.model.TicketmasterResponse
