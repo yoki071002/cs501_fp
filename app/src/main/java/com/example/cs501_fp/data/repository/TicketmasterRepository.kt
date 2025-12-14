@@ -35,21 +35,42 @@ class TicketmasterRepository {
         val startDateTimeStr = utcStart.format(formatter)
         val endDateTimeStr = utcEnd.format(formatter)
 
-        return try {
-            val response = api.getEvents(
-                apiKey = Constants.TICKETMASTER_API_KEY,
-                city = "New York",
-                startDateTime = startDateTimeStr,
-                endDateTime = endDateTimeStr,
-                size = 100,
-                keyword = "Broadway",
-                classificationName = "Theatre",
-                sort = "date,asc"
-            )
-            response._embedded?.events ?: emptyList()
+        val allEvents = mutableListOf<TicketmasterEvent>()
+        var page = 0
+        val pageSize = 100
+        var keepFetching = true
+
+        try {
+            while (keepFetching) {
+                val response = api.getEvents(
+                    apiKey = Constants.TICKETMASTER_API_KEY,
+                    city = "New York",
+                    startDateTime = startDateTimeStr,
+                    endDateTime = endDateTimeStr,
+                    size = pageSize,
+                    page = page,
+                    keyword = "Broadway",
+                    classificationName = "Theatre",
+                    sort = "date,asc"
+                )
+
+                val events = response._embedded?.events ?: emptyList()
+                allEvents.addAll(events)
+
+                if (events.size < pageSize) {
+                    keepFetching = false
+                } else {
+                    page++
+                }
+                if (page >= 5) keepFetching = false
+            }
+
+            Log.d("TicketmasterRepo", "Total fetched events: ${allEvents.size}")
+            return allEvents
+
         } catch (e: Exception) {
             Log.e("TicketmasterRepo", "Error fetching events: ${e.message}", e)
-            emptyList()
+            return allEvents
         }
     }
 
@@ -72,6 +93,7 @@ class TicketmasterRepository {
                 startDateTime = now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
                 endDateTime = now.plusMonths(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")),
                 size = 20,
+                page = 0,
                 keyword = keyword,
                 classificationName = "Theatre",
                 sort = "date,asc"

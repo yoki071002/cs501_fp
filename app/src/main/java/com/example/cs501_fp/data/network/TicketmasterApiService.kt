@@ -17,6 +17,7 @@ interface TicketmasterApiService {
         @Query("startDateTime") startDateTime: String,
         @Query("endDateTime") endDateTime: String,
         @Query("size") size: Int,
+        @Query("page") page: Int,
         @Query("keyword") keyword: String?,
         @Query("classificationName") classificationName: String?,
         @Query("sort") sort: String?
