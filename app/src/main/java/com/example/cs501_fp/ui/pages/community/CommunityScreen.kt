@@ -40,6 +40,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
+import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.viewmodel.CommunityViewModel
 import com.example.cs501_fp.viewmodel.SortOption
 import java.text.SimpleDateFormat
@@ -76,12 +77,24 @@ fun CommunityScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Stage Door") },
+                title = {
+                    Text(
+                        "Stage Door",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", modifier = Modifier.size(28.dp))
                     }
-                }
+                },
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier.heightIn(max = 64.dp)
             )
         }
     ) { inner ->
@@ -108,13 +121,20 @@ fun CommunityScreen(
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                val chipColors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary
+                )
+
                 FilterChip(
                     selected = sortOption == SortOption.NEWEST,
                     onClick = { viewModel.setSortOption(SortOption.NEWEST) },
                     label = { Text("Newest") },
                     leadingIcon = if (sortOption == SortOption.NEWEST) {
                         { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                    } else null
+                    } else null,
+                    colors = chipColors
                 )
                 FilterChip(
                     selected = sortOption == SortOption.TRENDING,
@@ -122,7 +142,8 @@ fun CommunityScreen(
                     label = { Text("Trending") },
                     leadingIcon = if (sortOption == SortOption.TRENDING) {
                         { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                    } else null
+                    } else null,
+                    colors = chipColors
                 )
                 FilterChip(
                     selected = sortOption == SortOption.MINE,
@@ -130,13 +151,14 @@ fun CommunityScreen(
                     label = { Text("My Posts") },
                     leadingIcon = if (sortOption == SortOption.MINE) {
                         { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) }
-                    } else null
+                    } else null,
+                    colors = chipColors
                 )
             }
             // Feed Content
             if (isLoading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (posts.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -232,10 +254,7 @@ fun CommunityPostCard(
     val isLiked = post.likedBy.contains(currentUserId)
     val likeCount = post.likedBy.size
 
-    Card(
-        elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
+    OnCoreCard {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (post.ownerAvatarUrl != null) {
@@ -334,7 +353,7 @@ fun CommunityPostCard(
                 Spacer(Modifier.height(12.dp))
             }
 
-            HorizontalDivider()
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
             Row(
                 modifier = Modifier
@@ -451,7 +470,7 @@ fun CommentSection(
                 .align(Alignment.CenterHorizontally)
         )
 
-        HorizontalDivider()
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
         LazyColumn(
             modifier = Modifier
@@ -486,7 +505,7 @@ fun CommentSection(
             }
         }
 
-        HorizontalDivider()
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
 
         Row(
             modifier = Modifier
@@ -509,7 +528,8 @@ fun CommentSection(
                     viewModel.sendComment(eventId, postOwnerId, inputContent)
                     inputContent = ""
                 },
-                enabled = inputContent.isNotBlank()
+                enabled = inputContent.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("Send")
             }
