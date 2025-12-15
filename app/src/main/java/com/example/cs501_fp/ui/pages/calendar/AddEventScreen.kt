@@ -268,8 +268,6 @@ fun AddEventScreen(
                                     modifier = Modifier.clickable {
                                         title = event.name ?: ""
                                         venue = event._embedded?.venues?.firstOrNull()?.name ?: ""
-                                        event.dates?.start?.localDate?.let { dateText = it }
-                                        event.dates?.start?.localTime?.let { timeText = it.take(5) }
                                         officialImageUrl = event.images?.firstOrNull()?.url
                                         tmId = event.id
                                         viewModel.clearSearchResults()

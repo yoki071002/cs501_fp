@@ -57,7 +57,12 @@ class CalendarViewModel(
         viewModelScope.launch {
             if (query.length > 2) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    _searchResults.value = ticketRepo.searchEventsByKeyword(query)
+                    val rawResults = ticketRepo.searchEventsByKeyword(query)
+                    _searchResults.value = rawResults.distinctBy { event ->
+                        val name = event.name ?: ""
+                        val venue = event._embedded?.venues?.firstOrNull()?.name ?: ""
+                        "$name|$venue"
+                    }
                 }
             } else {
                 _searchResults.value = emptyList()
