@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-// 1. 通用主按钮 (红底白字，圆角)
 @Composable
 fun OnCoreButton(
     onClick: () -> Unit,
@@ -34,7 +33,6 @@ fun OnCoreButton(
     )
 }
 
-// 2. 通用次要按钮 (透明底，带字)
 @Composable
 fun OnCoreTextButton(
     onClick: () -> Unit,
@@ -48,7 +46,6 @@ fun OnCoreTextButton(
     )
 }
 
-// 3. 通用卡片 (统一阴影和圆角)
 @Composable
 fun OnCoreCard(
     modifier: Modifier = Modifier,

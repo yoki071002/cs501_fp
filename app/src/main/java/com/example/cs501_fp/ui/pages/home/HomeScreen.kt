@@ -83,7 +83,7 @@ fun HomeScreen(
                     }
                 },
                 windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 60.dp)
+                modifier = Modifier.heightIn(max = 64.dp)
             )
         }
     ) { inner ->
