@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -26,15 +26,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cs501_fp.viewmodel.HomeViewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.cs501_fp.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -62,24 +64,34 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("OnCore") },
+                title = {
+                    Text(
+                        "OnCore",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.AccountCircle, "Profile")
+                        Icon(Icons.Default.AccountCircle, "Profile", modifier = Modifier.size(28.dp))
                     }
-                }
+                },
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier.heightIn(max = 60.dp)
             )
         }
     ) { inner ->
         LazyColumn(
             modifier = Modifier
                 .padding(inner)
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
+                .fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            // Daily Pick
+            // Daily Pick Section
             item {
                 if (isLoading) {
                     LoadingBannerPlaceholder()
@@ -96,20 +108,24 @@ fun HomeScreen(
                 }
             }
 
-            // Weekly Shows
+            // Weekly Shows Header
             item {
-                SectionHeader(
-                    title = "Shows This Week",
-                    isPrevEnabled = isPrevWeekEnabled,
-                    onPrev = { viewModel.prevWeek() },
-                    onNext = { viewModel.nextWeek() }
-                )
+                Column(Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(Modifier.height(24.dp))
+                    SectionHeader(
+                        title = "Shows This Week",
+                        isPrevEnabled = isPrevWeekEnabled,
+                        onPrev = { viewModel.prevWeek() },
+                        onNext = { viewModel.nextWeek() }
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
             }
 
             if (isLoading) {
                 item {
                     Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
             } else if (showsByDay.isEmpty()) {
@@ -125,11 +141,13 @@ fun HomeScreen(
                 sortedDays.forEach { date ->
                     val showsOnDate = showsByDay[date] ?: emptyList()
                     item {
-                        DailyShowsItem(
-                            date = date,
-                            shows = showsOnDate,
-                            onShowClick = onShowClick
-                        )
+                        Column(Modifier.padding(horizontal = 16.dp)) {
+                            DailyShowsItem(
+                                date = date,
+                                shows = showsOnDate,
+                                onShowClick = onShowClick
+                            )
+                        }
                     }
                 }
             }
@@ -143,8 +161,8 @@ fun HomeScreen(
                 ) {
                     Text(
                         text = "* All show times are displayed in Venue Local Time (ET).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
                     )
                     Spacer(Modifier.height(60.dp))
                 }
@@ -160,15 +178,18 @@ fun LoadingBannerPlaceholder() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .height(280.dp)
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(modifier = Modifier.size(32.dp), strokeWidth = 3.dp)
-            Spacer(Modifier.height(8.dp))
-            Text("Loading Daily Pick...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                strokeWidth = 4.dp,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(16.dp))
+            Text("Setting the stage...", style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
@@ -182,64 +203,96 @@ private fun DailyPickBanner(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .clickable { onListenClick() },
-        contentAlignment = Alignment.BottomStart
+            .height(320.dp)
+            .clickable { onListenClick() }
     ) {
         if (pick.imageUrl != null) {
             AsyncImage(
-                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                model = ImageRequest.Builder(LocalContext.current)
                     .data(pick.imageUrl)
                     .crossfade(true)
-                    .size(600, 600)
+                    .size(800, 800)
                     .build(),
-                contentDescription = "Album Art",
+                contentDescription = "Daily Pick Art",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
         } else {
-            Box(Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.primary))
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary))
         }
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.4f))
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.5f),
+                            Color.Black.copy(alpha = 0.9f)
+                        ),
+                        startY = 100f
+                    )
+                )
         )
 
-        Column(Modifier.padding(16.dp)) {
-            Text("Daily Pick", color = Color.White.copy(alpha = 0.9f), fontSize = 12.sp)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(20.dp)
+        ) {
+            Surface(
+                color = MaterialTheme.colorScheme.secondary,
+                shape = RoundedCornerShape(4.dp)
+            ) {
+                Text(
+                    text = "DAILY MUSICAL PICK",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
             Text(
                 pick.title,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+
             Text(
                 pick.venue,
-                color = Color.White.copy(alpha = 0.8f),
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.secondary, // 金色
                 maxLines = 1
             )
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
             Button(
                 onClick = onListenClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(if (isPlaying) "Pause" else "Listen")
+                Text(
+                    text = if (isPlaying) "PAUSE PREVIEW" else "LISTEN PREVIEW",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -253,9 +306,22 @@ private fun SectionHeader(title: String, isPrevEnabled: Boolean, onPrev: () -> U
         Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-        TextButton(onClick = onPrev, enabled = isPrevEnabled) { Text("‹") }
-        TextButton(onClick = onNext) { Text("›") }
+        Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+
+        FilledIconButton(
+            onClick = onPrev,
+            enabled = isPrevEnabled,
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.size(32.dp)
+        ) { Text("‹", fontSize = 20.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center) }
+
+        Spacer(Modifier.width(8.dp))
+
+        FilledIconButton(
+            onClick = onNext,
+            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            modifier = Modifier.size(32.dp)
+        ) { Text("›", fontSize = 20.sp) }
     }
 }
 
@@ -265,39 +331,60 @@ private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 84.dp)
+            .height(100.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (show.imageUrl != null) {
                 AsyncImage(
-                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                    model = ImageRequest.Builder(LocalContext.current)
                         .data(show.imageUrl)
                         .crossfade(true)
-                        .size(150, 150)
+                        .size(300, 300)
                         .build(),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(10.dp)),
+                        .width(70.dp)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                )
+                        .width(70.dp)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("?", color = Color.Gray)
+                }
             }
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
-                Text(show.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(show.venue, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                Text(
+                    show.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    show.venue,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+                Spacer(Modifier.height(4.dp))
                 Text(
                     show.dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -315,33 +402,42 @@ private fun DailyShowsItem(
     var isExpanded by remember { mutableStateOf(false) }
 
     Column {
-        Card(
-            onClick = { isExpanded = !isExpanded },
-            modifier = Modifier.fillMaxWidth()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { isExpanded = !isExpanded }
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f)
+            )
+            Badge(containerColor = MaterialTheme.colorScheme.primaryContainer) {
                 Text(
-                    text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Expand or collapse"
+                    "${shows.size}",
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
 
         AnimatedVisibility(visible = isExpanded) {
-            Column(modifier = Modifier.padding(top = 8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 shows.forEach { show ->
                     ShowCard(show = show, onClick = { onShowClick(show) })
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
+                Spacer(Modifier.height(8.dp))
             }
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
     }
 }
