@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.cs501_fp.data.local.entity.UserEvent
+import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,8 +33,18 @@ fun DayEventListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Events on $dateText") },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Events on $dateText",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -41,7 +52,9 @@ fun DayEventListScreen(
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier.heightIn(max = 64.dp)
             )
         }
     ) { inner ->
@@ -76,10 +89,9 @@ private fun DayEventList(
     events: List<UserEvent>,
     onEventClick: (UserEvent) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         events.forEach { e ->
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
+            OnCoreCard(
                 onClick = { onEventClick(e) }
             ) {
                 Row(
@@ -92,23 +104,28 @@ private fun DayEventList(
                         Text(
                             e.title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             "${e.timeText} • ${e.venue}",
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (e.seat.isNotBlank()) {
                             Text(
                                 "Seat: ${e.seat}",
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
 
                     Text(
-                        "$${"%.2f".format(e.price)}",
-                        style = MaterialTheme.typography.titleMedium
+                        "$${"%.0f".format(e.price)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

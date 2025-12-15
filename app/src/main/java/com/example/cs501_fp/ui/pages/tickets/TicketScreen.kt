@@ -60,6 +60,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.cs501_fp.data.local.entity.UserEvent
+import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.AnalyticsViewModel
@@ -84,12 +85,24 @@ fun TicketScreen(
         topBar = {
             Column {
                 CenterAlignedTopAppBar(
-                    title = { Text("Ticket Wallet") },
+                    title = {
+                        Text(
+                            "Ticket Wallet",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    },
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                        actionIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
                     actions = {
                         IconButton(onClick = onProfileClick) {
                             Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
                         }
-                    }
+                    },
+                    windowInsets = WindowInsets.statusBars,
+                    modifier = Modifier.heightIn(max = 64.dp)
                 )
                 TicketToggle(
                     selectedIndex = selectedTabIndex,
@@ -174,17 +187,17 @@ fun AnalyticsContent(viewModel: AnalyticsViewModel) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Text("Budget Monitor", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Budget Monitor", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         BudgetCard(
             budget = budget,
             spent = spent,
             onEditClick = { showBudgetDialog = true }
         )
 
-        Text("6-Month Spending Trend", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("6-Month Spending Trend", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         TrendChartCard(trends = trends)
 
-        Text("Key Metrics", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text("Key Metrics", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -223,7 +236,7 @@ fun SetBudgetDialog(currentBudget: Double, onDismiss: () -> Unit, onSave: (Doubl
             )
         },
         confirmButton = {
-            Button(onClick = { onSave(text.toDoubleOrNull() ?: currentBudget) }) { Text("Save") }
+            OnCoreButton(onClick = { onSave(text.toDoubleOrNull() ?: currentBudget) }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
@@ -600,7 +613,7 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
                         }
                     }
                     Spacer(Modifier.weight(1f))
-                    Button(onClick = { showGalleryDialog = false }, modifier = Modifier.align(Alignment.End)) { Text("Close") }
+                    OnCoreButton(onClick = { showGalleryDialog = false }, modifier = Modifier.align(Alignment.End)) { Text("Close") }
                 }
             }
         }
@@ -938,7 +951,7 @@ fun EditRepoDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onSave(notes, publicReview, isPublic) }) {
+            OnCoreButton(onClick = { onSave(notes, publicReview, isPublic) }) {
                 Text("Save")
             }
         },

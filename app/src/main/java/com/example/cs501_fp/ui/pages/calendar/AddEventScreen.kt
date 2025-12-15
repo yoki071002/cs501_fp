@@ -44,10 +44,12 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.Coil
+import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.CalendarViewModel
+import com.example.cs501_fp.ui.components.OnCoreButton
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
@@ -189,7 +191,11 @@ fun AddEventScreen(
             onDismissRequest = { showConflictDialog = false },
             title = { Text("Time Conflict Warning") },
             text = { Text("You already have an event scheduled around this time on $dateText. Add anyway?") },
-            confirmButton = { Button(onClick = { showConflictDialog = false; doSave() }) { Text("Yes, Add It") } },
+            confirmButton = {
+                OnCoreButton(onClick = { showConflictDialog = false; doSave() }) {
+                    Text("Yes, Add It")
+                }
+            },
             dismissButton = { TextButton(onClick = { showConflictDialog = false }) { Text("Cancel") } }
         )
     }
@@ -221,15 +227,35 @@ fun AddEventScreen(
     // --- Main UI Layout ---
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Add Event") },
-                navigationIcon = { TextButton(onClick = onCancel) { Text("Cancel") } },
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Add Event",
+                        style = MaterialTheme.typography.headlineMedium // Broadway font
+                    )
+                },
+                navigationIcon = {
+                    TextButton(
+                        onClick = onCancel,
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
+                    ) { Text("Cancel") }
+                },
                 actions = {
                     TextButton(
                         onClick = { attemptSave() },
-                        enabled = title.isNotBlank() && venue.isNotBlank() && timeText.isNotBlank() && dateText.isNotBlank()
+                        enabled = title.isNotBlank() && venue.isNotBlank() && timeText.isNotBlank() && dateText.isNotBlank(),
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
+                        )
                     ) { Text("Save") }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier.heightIn(max = 64.dp)
             )
         }
     ) { inner ->
@@ -242,9 +268,7 @@ fun AddEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Title Input (with auto complete search)
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .zIndex(1f)) {
+            Box(modifier = Modifier.fillMaxWidth().zIndex(1f)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it; viewModel.searchEvents(it) },
@@ -258,7 +282,8 @@ fun AddEventScreen(
                         modifier = Modifier
                             .padding(top = 60.dp)
                             .fillMaxWidth()
-                            .heightIn(max = 200.dp)
+                            .heightIn(max = 200.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         LazyColumn {
                             items(searchResults) { event ->
@@ -315,22 +340,28 @@ fun AddEventScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 
                 // Camera Button
-                OutlinedButton(onClick = {
-                    val permissionCheck = ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.CAMERA
-                    )
-                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                        cameraLauncher.launch(tempCameraUri)
-                    } else {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                }) {
+                OutlinedButton(
+                    onClick = {
+                        val permissionCheck = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        )
+                        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                            cameraLauncher.launch(tempCameraUri)
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
                     Icon(Icons.Default.PhotoCamera, null); Spacer(Modifier.width(8.dp)); Text("Camera")
                 }
 
                 // Gallery Button
-                OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
+                OutlinedButton(
+                    onClick = { galleryLauncher.launch("image/*") },
+                    modifier = Modifier.weight(1f)
+                ) {
                     Icon(Icons.Default.AddPhotoAlternate, null); Spacer(Modifier.width(8.dp)); Text("Gallery")
                 }
             }
@@ -340,7 +371,7 @@ fun AddEventScreen(
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tempPhotoUris) { uri ->
                         AsyncImage(
-                            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                            model = ImageRequest.Builder(LocalContext.current)
                                 .data(uri)
                                 .size(200, 200)
                                 .crossfade(false)
