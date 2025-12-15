@@ -11,7 +11,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -36,6 +35,7 @@ import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,6 +59,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
@@ -66,6 +67,8 @@ import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.AnalyticsViewModel
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.MonthlyStat
+import com.example.cs501_fp.ui.theme.Gold
+import com.example.cs501_fp.ui.theme.GoldDim
 import java.io.File
 
 
@@ -626,7 +629,7 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (bgImage != null) {
                 AsyncImage(
-                    model = coil.request.ImageRequest.Builder(LocalContext.current)
+                    model = ImageRequest.Builder(LocalContext.current)
                         .data(bgImage)
                         .crossfade(true)
                         .size(800, 800)
@@ -819,17 +822,17 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                             if (event.publicReview.isNotBlank()) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.Public, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                            Icon(Icons.Default.Public, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                                             Spacer(Modifier.width(6.dp))
-                                            Text("Public Review", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                            Text("Public Review", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
                                         }
                                         Spacer(Modifier.height(4.dp))
-                                        Text(event.publicReview, style = MaterialTheme.typography.bodyMedium)
+                                        Text(event.publicReview, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                     }
                                 }
                             }
@@ -837,17 +840,17 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                             if (event.notes.isNotBlank()) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
+                                    color = Gold.copy(alpha = 0.3f),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.Lock, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.secondary)
+                                            Icon(Icons.Default.Lock, null, Modifier.size(14.dp), tint = GoldDim)
                                             Spacer(Modifier.width(6.dp))
-                                            Text("Private Notes", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                                            Text("Private Notes", style = MaterialTheme.typography.labelSmall, color = GoldDim, fontWeight = FontWeight.Bold)
                                         }
                                         Spacer(Modifier.height(4.dp))
-                                        Text(event.notes, style = MaterialTheme.typography.bodyMedium)
+                                        Text(event.notes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                                     }
                                 }
                             }
