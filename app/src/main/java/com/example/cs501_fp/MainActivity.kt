@@ -1,3 +1,4 @@
+// File: app/src/main/java/com/example/cs501_fp/MainActivity.kt
 package com.example.cs501_fp
 
 import android.os.Build
@@ -11,7 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.example.cs501_fp.ui.navigation.NavGraph
 import com.example.cs501_fp.viewmodel.ThemeViewModel
-import com.example.musicalcalendar.ui.theme._501_fpTheme
+import com.example.cs501_fp.ui.theme._501_fpTheme
 
 class MainActivity : ComponentActivity() {
     private val themeViewModel: ThemeViewModel by viewModels()
@@ -22,8 +23,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
-
-            _501_fpTheme(darkTheme = isDarkTheme) {
+            _501_fpTheme(
+                darkTheme = isDarkTheme,
+                dynamicColor = false
+            ) {
                 NavGraph(themeViewModel = themeViewModel)
             }
         }
