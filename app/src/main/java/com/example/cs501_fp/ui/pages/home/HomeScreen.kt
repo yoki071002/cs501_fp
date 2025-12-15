@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.cs501_fp.ui.components.OnCoreButton
+import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -273,14 +275,9 @@ private fun DailyPickBanner(
 
             Spacer(Modifier.height(16.dp))
 
-            Button(
+            OnCoreButton(
                 onClick = onListenClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
-                ),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                shape = RoundedCornerShape(12.dp)
+                modifier = Modifier.wrapContentWidth()
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
@@ -328,13 +325,9 @@ private fun SectionHeader(title: String, isPrevEnabled: Boolean, onPrev: () -> U
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    OnCoreCard(
+        onClick = onClick,
+        modifier = Modifier.height(100.dp)
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             if (show.imageUrl != null) {
