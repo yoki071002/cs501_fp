@@ -108,7 +108,7 @@ fun TicketScreen(
                         Icon(
                             Icons.Default.AccountCircle,
                             contentDescription = "Profile",
-                            tint = TicketInkColor,
+                            tint = Gold,
                             modifier = Modifier.size(28.dp)
                         )
                     }

@@ -36,6 +36,7 @@ import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.ui.components.StaggeredEntry
 import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.Gold
 import com.example.cs501_fp.ui.theme.TicketInkColor
 import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.CalendarViewModel
@@ -92,7 +93,7 @@ fun CalendarScreen(
                 title = "My Calendar",
                 actions = {
                     IconButton(onClick = { navController.navigate("profile") }) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = TicketInkColor, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = Gold, modifier = Modifier.size(28.dp))
                     }
                 }
             )

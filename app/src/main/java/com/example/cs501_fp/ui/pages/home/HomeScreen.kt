@@ -40,6 +40,7 @@ import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.ui.components.StaggeredEntry
 import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.Gold
 import com.example.cs501_fp.ui.theme.TicketInkColor
 import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.HomeViewModel
@@ -74,7 +75,7 @@ fun HomeScreen(
                 title = "OnCore",
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.AccountCircle, "Profile", tint = TicketInkColor, modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.AccountCircle, "Profile", tint = Gold, modifier = Modifier.size(28.dp))
                     }
                 }
             )
