@@ -18,6 +18,7 @@ import com.example.cs501_fp.data.repository.UserRepository
 import com.example.cs501_fp.data.repository.FirestoreRepository
 import com.example.cs501_fp.data.repository.LocalRepository
 import com.example.cs501_fp.data.repository.TicketmasterRepository
+import com.example.cs501_fp.util.EventReminderScheduler
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -130,20 +131,26 @@ class CalendarViewModel(
 
             if (currentUser != null) {
                 val profile = userRepo.getUserProfile()
-
                 eventToSave = event.copy(
                     ownerId = currentUser.uid,
-                    ownerName = profile?.username?.ifBlank { currentUser.email?.substringBefore("@") } ?: "User",
+                    ownerName = profile?.username ?: currentUser.email ?: "User",
                     ownerAvatarUrl = profile?.avatarUrl
                 )
             }
 
             localRepo.addEvent(eventToSave)
+
+            EventReminderScheduler.schedule(
+                getApplication(),
+                eventToSave
+            )
+
             if (currentUser != null) {
                 cloudRepo.uploadEvent(eventToSave)
             }
         }
     }
+
 
     fun updateEvent(event: UserEvent) {
         viewModelScope.launch {
@@ -169,6 +176,12 @@ class CalendarViewModel(
     fun deleteEvent(event: UserEvent) {
         viewModelScope.launch {
             localRepo.deleteEvent(event)
+
+            EventReminderScheduler.cancel(
+                getApplication(),
+                event.id
+            )
+
             FirebaseAuth.getInstance().currentUser?.let {
                 try {
                     cloudRepo.deleteEvent(event.id)
@@ -178,6 +191,7 @@ class CalendarViewModel(
             }
         }
     }
+
 
 
     // --- Sync ---
