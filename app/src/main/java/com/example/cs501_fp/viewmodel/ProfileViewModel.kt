@@ -11,6 +11,8 @@ import com.example.cs501_fp.data.local.AppDatabase
 import com.example.cs501_fp.data.model.UserProfile
 import com.example.cs501_fp.data.repository.LocalRepository
 import com.example.cs501_fp.data.repository.UserRepository
+import com.example.cs501_fp.data.repository.FirestoreRepository
+import com.example.cs501_fp.data.local.entity.UserEvent
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,12 +22,16 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
 
     private val userRepo = UserRepository()
     private val auth = FirebaseAuth.getInstance()
+    private val firestoreRepo = FirestoreRepository()
 
     private val db = AppDatabase.getInstance(application)
     private val localRepo = LocalRepository(db.userEventDao())
 
     private val _profile = MutableStateFlow(UserProfile())
     val profile: StateFlow<UserProfile> = _profile
+
+    private val _targetUserEvents = MutableStateFlow<List<UserEvent>>(emptyList())
+    val targetUserEvents: StateFlow<List<UserEvent>> = _targetUserEvents
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -40,6 +46,10 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
             _isLoading.value = true
             val p = userRepo.getUserProfile(userId)
             if (p != null) _profile.value = p
+            if (!isCurrentUser(userId) && userId != null) {
+                val events = firestoreRepo.getPublicEventsByOwner(userId)
+                _targetUserEvents.value = events
+            }
             _isLoading.value = false
         }
     }

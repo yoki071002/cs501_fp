@@ -64,7 +64,10 @@ fun UserProfileScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     val isCurrentUser = viewModel.isCurrentUser(userId)
-    val myEvents by calendarViewModel.events.collectAsState(initial = emptyList())
+
+    val myLocalEvents by calendarViewModel.events.collectAsState(initial = emptyList())
+    val targetCloudEvents by viewModel.targetUserEvents.collectAsState()
+    val eventsToShow = if (isCurrentUser) myLocalEvents else targetCloudEvents
 
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -299,7 +302,13 @@ fun UserProfileScreen(
                 // --- Content Area ---
                 Box(modifier = Modifier.weight(1f)) {
                     if (selectedTab == 0) {
-                        val reviews = myEvents.filter { it.publicReview.isNotBlank() || it.notes.isNotBlank() }
+                        val reviews = eventsToShow.filter { event ->
+                            if (isCurrentUser) {
+                                event.publicReview.isNotBlank() || event.notes.isNotBlank()
+                            } else {
+                                event.publicReview.isNotBlank()
+                            }
+                        }
 
                         if (reviews.isEmpty()) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -320,7 +329,9 @@ fun UserProfileScreen(
                                             if (event.publicReview.isNotBlank()) {
                                                 Text(event.publicReview, style = MaterialTheme.typography.bodyMedium)
                                             } else {
-                                                Text(event.notes, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                                                if (isCurrentUser) {
+                                                    Text(event.notes, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                                                }
                                             }
 
                                             Spacer(Modifier.height(8.dp))
@@ -331,7 +342,7 @@ fun UserProfileScreen(
                             }
                         }
                     } else {
-                        val eventsWithImages = myEvents.filter { !it.officialImageUrl.isNullOrBlank() || it.userImageUris.isNotEmpty() }
+                        val eventsWithImages = eventsToShow.filter { !it.officialImageUrl.isNullOrBlank() || it.userImageUris.isNotEmpty() }
 
                         if (eventsWithImages.isEmpty()) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

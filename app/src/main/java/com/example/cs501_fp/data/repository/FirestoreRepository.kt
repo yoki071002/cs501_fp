@@ -99,6 +99,22 @@ class FirestoreRepository {
         }
     }
 
+    suspend fun getPublicEventsByOwner(ownerId: String): List<UserEvent> {
+        return try {
+        db.collection("users")
+            .document(ownerId)
+            .collection("events")
+            .whereEqualTo("public", true)
+            .get()
+            .await()
+            .toObjects(UserEvent::class.java)
+            .sortedByDescending { it.dateText }
+        } catch (e: Exception) {
+        Log.e("FirestoreRepo", "Failed to fetch user events", e)
+        emptyList()
+        }
+    }
+
 
     // --- Image Upload ---
     suspend fun uploadEventImage(eventId: String, uri: Uri): String? {
