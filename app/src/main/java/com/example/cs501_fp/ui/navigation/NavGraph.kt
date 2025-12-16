@@ -33,6 +33,7 @@ import com.example.cs501_fp.ui.pages.home.HomeScreen
 import com.example.cs501_fp.ui.pages.profile.UserProfileScreen
 import com.example.cs501_fp.ui.pages.profile.ProfileScreen
 import com.example.cs501_fp.ui.pages.tickets.TicketScreen
+import com.example.cs501_fp.util.EventReminderScheduler
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
@@ -129,6 +130,10 @@ fun NavGraph(
                 AddEventScreen(
                     onSave = { event ->
                         calendarVM.addEvent(event)
+                        EventReminderScheduler.schedule(
+                            context = navController.context,
+                            event = event
+                        )
                         navController.popBackStack()
                     },
                     onCancel = { navController.popBackStack() }
