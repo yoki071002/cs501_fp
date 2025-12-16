@@ -87,7 +87,7 @@ fun CalendarScreen(
     }
 
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "My Calendar",

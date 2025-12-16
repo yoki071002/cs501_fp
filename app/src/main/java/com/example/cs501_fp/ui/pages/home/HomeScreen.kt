@@ -69,7 +69,7 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "OnCore",

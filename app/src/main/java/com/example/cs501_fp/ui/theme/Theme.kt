@@ -39,8 +39,9 @@ private val LightColorScheme = lightColorScheme(
     secondary = GoldDim,
     onSecondary = TextBlack,
 
-    background = OffWhite,
-    surface = PaperWhite,
+    background = TicketPaperColor,
+    surface = TicketPaperColor,
+
     onBackground = TextBlack,
     onSurface = TextBlack,
     surfaceVariant = OffWhite

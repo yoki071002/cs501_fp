@@ -35,7 +35,7 @@ fun DayEventListScreen(
     }
 
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "Events on $dateText",

@@ -95,7 +95,7 @@ fun UserProfileScreen(
     }
 
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = profile.username.ifBlank { "Profile" },

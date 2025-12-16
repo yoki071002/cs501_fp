@@ -119,7 +119,7 @@ fun ProfileScreen(
 
     // Settings list layout
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "Settings",

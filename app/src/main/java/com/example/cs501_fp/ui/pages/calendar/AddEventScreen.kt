@@ -235,7 +235,7 @@ fun AddEventScreen(
 
     // --- Main UI Layout ---
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "Add Event",

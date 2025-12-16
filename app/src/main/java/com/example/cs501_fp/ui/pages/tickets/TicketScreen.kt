@@ -99,7 +99,7 @@ fun TicketScreen(
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "Ticket Wallet",

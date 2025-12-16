@@ -81,7 +81,7 @@ fun CommunityScreen(
 
     // --- Main UI Structure ---
     Scaffold(
-        containerColor = TicketPaperColor,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TheatricalTopBar(
                 title = "Stage Door",

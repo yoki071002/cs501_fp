@@ -49,7 +49,7 @@ fun EventDetailScreen(
 
     if (event == null) {
         Scaffold(
-            containerColor = TicketPaperColor,
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TheatricalTopBar(
                     title = "Event Detail",

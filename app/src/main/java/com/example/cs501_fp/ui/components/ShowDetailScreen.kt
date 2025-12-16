@@ -199,7 +199,7 @@ fun ShowDetailScreen(
     } else {
         val s = show!!
         Scaffold(
-            containerColor = TicketPaperColor,
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TheatricalTopBar(
                     title = "Show Detail",
