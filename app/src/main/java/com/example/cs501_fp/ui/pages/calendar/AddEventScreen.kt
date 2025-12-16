@@ -162,6 +162,11 @@ fun AddEventScreen(
         )
     }
 
+    /*
+    Helper function to parse time string into minutes
+    Assistance from AI to handle am/pm parsing edge cases
+    Refactored to include the try-catch error handling block
+    */
     fun parseTime(t: String): Int {
         return try {
             if (t.contains(":")) {
