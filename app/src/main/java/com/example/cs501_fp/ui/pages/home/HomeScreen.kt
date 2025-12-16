@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.StaggeredEntry
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -140,15 +141,17 @@ fun HomeScreen(
                     )
                 }
             } else {
-                sortedDays.forEach { date ->
+                sortedDays.forEachIndexed { index, date ->
                     val showsOnDate = showsByDay[date] ?: emptyList()
                     item {
-                        Column(Modifier.padding(horizontal = 16.dp)) {
-                            DailyShowsItem(
-                                date = date,
-                                shows = showsOnDate,
-                                onShowClick = onShowClick
-                            )
+                        StaggeredEntry(index = index) {
+                            Column(Modifier.padding(horizontal = 16.dp)) {
+                                DailyShowsItem(
+                                    date = date,
+                                    shows = showsOnDate,
+                                    onShowClick = onShowClick
+                                )
+                            }
                         }
                     }
                 }
@@ -335,50 +338,22 @@ private fun ShowCard(show: ShowSummary, onClick: () -> Unit) {
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(show.imageUrl)
                         .crossfade(true)
-                        .size(300, 300)
                         .build(),
                     contentDescription = null,
                     modifier = Modifier
-                        .width(70.dp)
+                        .width(60.dp)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .width(70.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("?", color = Color.Gray)
-                }
+                Spacer(Modifier.width(16.dp))
             }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text(
-                    show.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+
+            Column(Modifier.weight(1f)) {
+                Text(show.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(show.venue, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    show.venue,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    show.dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(show.dateTime.format(DateTimeFormatter.ofPattern("MMM d")), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -392,6 +367,9 @@ private fun DailyShowsItem(
     shows: List<ShowSummary>,
     onShowClick: (ShowSummary) -> Unit
 ) {
+    val dayOfWeek = date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+    val dayOfMonth = date.dayOfMonth.toString()
+
     var isExpanded by remember { mutableStateOf(false) }
 
     Column {
@@ -402,33 +380,68 @@ private fun DailyShowsItem(
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .width(60.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "${shows.size}",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "SHOWS",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
+                        fontSize = 8.sp
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = dayOfWeek.uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = date.format(DateTimeFormatter.ofPattern("MMMM d")),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
             Icon(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            Badge(containerColor = MaterialTheme.colorScheme.primaryContainer) {
-                Text(
-                    "${shows.size}",
-                    modifier = Modifier.padding(horizontal = 4.dp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
         }
 
         AnimatedVisibility(visible = isExpanded) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(bottom = 16.dp, start = 8.dp, end = 8.dp)
+            ) {
                 shows.forEach { show ->
                     ShowCard(show = show, onClick = { onShowClick(show) })
                 }
-                Spacer(Modifier.height(8.dp))
             }
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))

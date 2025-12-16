@@ -22,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -62,6 +63,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreButton
+import com.example.cs501_fp.ui.components.StaggeredEntry
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.AnalyticsViewModel
@@ -487,11 +489,13 @@ fun TicketListContent(viewModel: CalendarViewModel) {
                 }
             }
         } else {
-            items(
+            itemsIndexed(
                 items = events,
-                key = { event -> event.id }
-            ) { event ->
-                FlipTicketCard(event, viewModel)
+                key = { _, event -> event.id }
+            ) { index, event ->
+                StaggeredEntry(index = index) {
+                    FlipTicketCard(event, viewModel)
+                }
             }
         }
         item { Spacer(Modifier.height(60.dp)) }

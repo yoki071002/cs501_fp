@@ -11,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.StaggeredEntry
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -47,7 +49,7 @@ import java.util.*
 fun CalendarScreen(
     viewModel: CalendarViewModel,
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
@@ -243,7 +245,7 @@ private fun MonthGrid(
     month: YearMonth,
     today: LocalDate,
     events: List<Pair<UserEvent, LocalDate>>,
-    onDayClick: (LocalDate) -> Unit
+    onDayClick: (LocalDate) -> Unit,
 ) {
     val firstDay = month.atDay(1)
     val startIndex = firstDay.dayOfWeek.value % 7
@@ -300,66 +302,77 @@ private fun MonthGrid(
 private fun UpcomingList(
     items: List<UserEvent>,
     headcounts: Map<String, Long>,
-    onEventClick: (UserEvent) -> Unit
+    onEventClick: (UserEvent) -> Unit,
 ) {
     if (items.isEmpty()) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .height(100.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f), androidx.compose.foundation.shape.RoundedCornerShape(12.dp)),
+                .background(
+                    MaterialTheme.colorScheme.surfaceVariant,
+                    RoundedCornerShape(12.dp)
+                ),
             contentAlignment = Alignment.Center
         ) {
-            Text("No upcoming shows. Go see something!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("No upcoming shows.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        return
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.forEach { e ->
-            val othersCount = headcounts[e.id] ?: 0L
-
-            OnCoreCard(
-                onClick = { onEventClick(e) }
-            ) {
-                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                            .padding(8.dp)
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items.forEachIndexed { index, event ->
+                StaggeredEntry(index = index) {
+                    OnCoreCard(
+                        onClick = { onEventClick(event) }
                     ) {
-                        val parts = e.dateText.split("-")
-                        if (parts.size == 3) {
-                            Text(parts[1] + "/" + parts[2], style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        } else {
-                            Text("DATE", style = MaterialTheme.typography.labelSmall)
-                        }
-                    }
-
-                    Spacer(Modifier.width(16.dp))
-
-                    Column(Modifier.weight(1f)) {
-                        Text(e.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                        Spacer(Modifier.height(4.dp))
-                        Text("${e.timeText} • ${e.venue}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                        if (othersCount > 0) {
-                            Spacer(Modifier.height(4.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Groups,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(4.dp))
+                        Row(
+                            Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
                                 Text(
-                                    text = "$othersCount others going!",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary,
+                                    event.title,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "${event.dateText} @ ${event.timeText}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            // Social Headcount Badge
+                            val count = headcounts[event.id] ?: 0
+                            if (count > 0) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.secondaryContainer,
+                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(50),
+                                    modifier = Modifier.padding(start = 8.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Groups,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            "+$count",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                }
+                            } else {
+                                Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.outline)
                             }
                         }
                     }
