@@ -15,17 +15,43 @@
 
 | Feature Category | Feature Name | Status | Description |
 | :--- | :--- | :--- | :--- |
-| Core | **Ticket Wallet** | ✅ Completed | Digitalize tickets using Camera/Gallery; 3D Flip animation. |
-| Core | **Personal Calendar** | ✅ Completed | Monthly/Weekly views; Offline support via Room DB. |
-| Discovery | **Daily Pick** | ✅ Completed | Fetches musical previews via iTunes API. |
-| Discovery | **Event Search** | ✅ Completed | Real-time show search via Ticketmaster API. |
-| Social | **Community Feed** | ✅ Completed | Real-time feed of public tickets; "Helpful" likes. |
-| Social | **Headcounts** | ✅ Completed | "Who's Going" counter synced across users. |
-| Analytics | **Budget Tracker** | ✅ Completed | Visual spending charts and lifetime stats. |
-| User | **Profile & Auth** | 🚧 In Progress | Firebase Auth implemented; Linking user avatars pending. |
-| Cloud | **Image Storage** | ⏸️ Descoped | Using local URI for privacy/speed; Cloud Storage planned for future. |
-| ML | **Recommendation System** | ⏸️ Descoped | By scanning and scoring user's wallet to determine recommendation in community feed |
+| **Core** | **Ticket Wallet** | ✅ Completed | Digitalize tickets using Camera/Gallery; Local storage via Room. |
+| **Core** | **Personal Calendar** | ✅ Completed | Monthly/Weekly views; Offline support via Room DB. |
+| **Discovery** | **Daily Pick** | ✅ Completed | Fetches musical previews via **iTunes API**. |
+| **Discovery** | **Event Search** | ✅ Completed | Real-time show search via **Ticketmaster API**. |
+| **Social** | **Community Feed** | ✅ Completed | Real-time feed of public tickets; "Helpful" likes & comments. |
+| **Social** | **Headcounts** | ✅ Completed | "Who's Going" counter synced across users via Firestore. |
+| **Analytics** | **Budget Tracker** | ✅ Completed | Visual spending charts and lifetime stats dashboard. |
+| **User** | **Profile & Auth** | ✅ Completed | Full Firebase Auth (Login/Register); Profile editing. |
+| **Cloud** | **Image Storage** | ✅ Completed | Cloud syncing of ticket images via **Firebase Storage**. |
+| **ML** | **Recommendation** | ⏸️ Future | Planned: Scoring user's wallet to recommend shows. |
 
+---
+
+## Tech Stack:
+
+| Category | Technology | Usage |
+| :--- | :--- | :--- |
+| **Language** | **Kotlin** | Android development. |
+| **UI** | **Jetpack Compose** | Modern declarative UI toolkit (Material 3 Design). |
+| **Architecture** | **MVVM** | Model, UI, ViewModel. |
+| **Async** | **Coroutines & Flow** | Managing background threads and reactive state updates. |
+| **Networking** | **Retrofit** | API communication (Ticketmaster & iTunes). |
+| **Image Loading** | **Coil** | Efficient asynchronous image loading and caching. |
+| **Local Data** | **Room Database** | Offline data persistence (SQLite object mapping). |
+| **Preferences** | **DataStore** | Storing lightweight user settings (e.g., Budget). |
+| **Cloud** | **Firebase** | Authentication, Firestore (NoSQL), and Cloud Storage. |
+| **Hardware** | **Sensors** | Camera (Ticket Scanning) & Audio (MediaPlayer). |
+
+---
+
+## Architecture:
+
+The project follows the MVVM (Model-View-ViewModel) architecture pattern, utilizing a repository layer to mediate between data sources and the UI. This ensures a clean separation of concerns and facilitates Unidirectional Data Flow (UDF).
+
+<img width="395" height="581" alt="Weixin Image_20251216150934_1451" src="https://github.com/user-attachments/assets/93d8ba86-acad-4331-84dd-caacaafaaad1" />
+
+<img width="637" height="483" alt="Screenshot 2025-12-16 at 15 27 00" src="https://github.com/user-attachments/assets/cb22162c-0540-4a89-af96-9a7a33f7f83a" />
 
 ---
 
@@ -42,77 +68,12 @@
    ```bash
    git clone https://github.com/yoki071002/cs501_fp
    cd cs501_fp
-3. Open the project in Android Studio.  
-4. Let Gradle sync automatically (or trigger manually with `Sync Project with Gradle Files`).  
-5. Set the `build variant` to Debug.  
-6. Run the app on an emulator or a connected Android device.  
+2. Open the project in Android Studio.  
+3. Let Gradle sync automatically (or trigger manually with `Sync Project with Gradle Files`).  
+4. Set the `build variant` to Debug.  
+5. Run the app on an emulator or a connected Android device.  
 
 ---
 
-## Architecture
-
-The project follows the **MVVM (Model-View-ViewModel)** architecture pattern to ensure separation of concerns and testability.
-
-### Directory Structure
-Our repository is organized to strictly follow the MVVM separation:
-com.example.cs501_fp
-├── data                # Model Layer
-│   ├── firebase        # Auth & Cloud Logic
-│   ├── local           # Room DB (Entity, DAO)
-│   ├── network         # Retrofit Services (Ticketmaster, iTunes)
-│   └── repository      # Mediator with data source
-├── ui                  # View Layer
-│   ├── components      # Reusable Composables (BottomBar, ShowCard)
-│   ├── navigation      # NavGraph & Route Definitions
-│   ├── pages           # Screen-level Composables (Home, Calendar, Community)
-│   └── theme           # Material 3 Theme & Color System
-├── viewmodel           # ViewModel Layer
-│   ├── CalendarViewModel.kt
-│   ├── CommunityViewModel.kt
-│   └── ...
-└── util                # Constants & Helpers
-
-### Tech Stack
-*   Language: Kotlin
-*   UI: Jetpack Compose (Material 3)
-*   Async: Coroutines & Flow
-*   Local Data: Android Room Database
-*   Cloud Data: Firebase Firestore & Authentication
-*   Network: Retrofit & OkHttp & Coil (Image Loading)
-
----
-
-## Debugging & Testing Strategy
-
-We adopted a **Systematic Debugging Loop** rather than relying solely on print statements.
-
-### 1. Debugging Case Study: The Serialization Crash
-*   Symptom: The Community Feed returned 0 items, even though documents existed in the Firestore console.
-*   Localization: We traced the failure to `FirestoreRepository.getPublicEvents()`. Logs showed a generic success but empty lists.
-*   Stack Trace Analysis: Using Logcat, we finally caught a silenced exception:
-    > `java.lang.RuntimeException: Could not deserialize object. Class UserEvent does not define a no-argument constructor.`
-*   Root Cause: A naming conflict. Our Kotlin Data Class used `isPublic` (boolean), but Firestore's auto-generated field was named `public`. The default serializer failed to map them.
-*   Fix: We applied the `@PropertyName("public")` annotation to the field and ensured all data class fields had default values (e.g., `= ""`) to satisfy the no-arg constructor requirement.
-
-### 2. Testing Strategy
-*   Manual Testing: Verified UI flows on Android Emulators.
-
----
-
-## AI Usage Statement
-
-We utilized Generative AI tools (ChatGPT-4o) to accelerate development. Below is a breakdown of our usage, limitations encountered, and corrections made.
-
-### 1. Tools & Usage
-*   **Error Analysis:** Used to explain obscure Logcat stack traces.
-*   **Brainstorming:** Used to organize ideas for the "Stretch Goals" (e.g., Recommendation Algorithms, we had similar experiences before, but need to transform from large internet company's product into our personalized app).
-
-### 2. Specific Example
-*   Scenario: Implementing the Camera feature to save ticket images.
-*   Prompt: "How do I use ActivityResultContracts.TakePicturePreview in Jetpack Compose to save a bitmap to internal storage?"
-*   AI Response: Provided a code snippet using `LocalContext.current` and a file output stream.
-*   Correction Required: The AI's code caused a memory leak by not recycling the bitmap and used deprecated `getExternalStorageDirectory` methods. We had to manually refactor it to use `context.openFileOutput` for better security and privacy.
-
-### 3. Limitations & Learnings
-*   The AI frequently suggested Material 2 code which is incompatible with our **Material 3** project. We demonstrated understanding by manually migrating these components to the latest M3 standards.
-*   The AI generated Kotlin data classes without default values. This caused a RuntimeException because Firestore requires a no-argument constructor. We identified the root cause via Logcat and fixed it by initializing all fields.
+## AI Reflection
+We utilized AI assistants (LLMs) primarily for debugging code, resolving syntax errors, and troubleshooting integration issues throughout the development process.
