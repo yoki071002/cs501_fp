@@ -23,12 +23,10 @@ fun BottomNavBar(
     currentDestination: String?,
     onItemClick: (String) -> Unit,
 ) {
-    // 🟢 改动：使用 Radial Gradient 模拟舞台底部的氛围光
-    // 中间稍微亮一点（像乐池的光），四周深暗
     val footerGradient = Brush.verticalGradient(
         colors = listOf(
             TheatreRedDark,
-            Color(0xFF2A0000) // 底部接近纯黑
+            Color(0xFF2A0000)
         )
     )
 
@@ -37,15 +35,13 @@ fun BottomNavBar(
             .fillMaxWidth()
             .background(footerGradient)
     ) {
-        // 顶部金线
         HorizontalDivider(
             color = Gold,
             thickness = 2.dp
         )
 
-        // 导航栏
         NavigationBar(
-            containerColor = Color.Transparent, // 透明
+            containerColor = Color.Transparent,
             contentColor = Gold,
             tonalElevation = 0.dp
         ) {

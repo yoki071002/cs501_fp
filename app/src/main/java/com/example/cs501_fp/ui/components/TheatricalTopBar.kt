@@ -14,7 +14,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -29,17 +28,15 @@ fun TheatricalTopBar(
     navigationIcon: @Composable () -> Unit = {},
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    // 🟢 调整 1：背景提亮一点点，不要太黑
     val velvetGradient = Brush.verticalGradient(
         colors = listOf(
-            Color(0xFF750000), // 顶部：深茜红 (不再是死黑)
-            TheatreRedDark     // 底部：标准深红
+            Color(0xFF750000),
+            TheatreRedDark
         )
     )
 
     Column(
         modifier = modifier
-            // 🟢 调整 2：阴影换成红色系的深色，而不是纯黑，看起来更干净
             .shadow(
                 elevation = 8.dp,
                 spotColor = Color(0xFF3E0000).copy(alpha = 0.6f),
@@ -54,18 +51,14 @@ fun TheatricalTopBar(
                 .padding(horizontal = 4.dp),
             contentAlignment = Alignment.Center
         ) {
-            // 舞台灯光装饰
             SpotlightDecoration(modifier = Modifier.fillMaxSize())
 
-            // 左侧按钮
             Box(modifier = Modifier.align(Alignment.CenterStart)) {
-                // 强制内部图标为金色
                 CompositionLocalProvider(LocalContentColor provides Gold) {
                     navigationIcon()
                 }
             }
 
-            // 中间标题
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineMedium,
@@ -77,19 +70,16 @@ fun TheatricalTopBar(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            // 右侧按钮
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 强制内部图标为金色
                 CompositionLocalProvider(LocalContentColor provides Gold) {
                     actions()
                 }
             }
         }
 
-        // 底部金线
         HorizontalDivider(
             color = Gold,
             thickness = 2.dp
@@ -102,11 +92,10 @@ private fun SpotlightDecoration(modifier: Modifier) {
     Canvas(modifier = modifier) {
         val width = size.width
 
-        // 左光束
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Gold.copy(alpha = 0.12f), // 稍微调低一点亮度，优雅一点
+                    Gold.copy(alpha = 0.12f),
                     Color.Transparent
                 ),
                 center = Offset(0f, 0f),
@@ -116,7 +105,6 @@ private fun SpotlightDecoration(modifier: Modifier) {
             radius = 120.dp.toPx()
         )
 
-        // 右光束
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
