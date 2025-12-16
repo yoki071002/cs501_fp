@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,6 +38,11 @@ import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
+import com.example.cs501_fp.ui.components.OnCoreButton
+import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.ProfileViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -46,7 +52,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun ProfileScreen(
     navController: NavHostController,
     themeViewModel: ThemeViewModel,
-    viewModel: ProfileViewModel = viewModel()
+    viewModel: ProfileViewModel = viewModel(),
 ) {
     val context = LocalContext.current
     val profile by viewModel.profile.collectAsState()
@@ -79,7 +85,7 @@ fun ProfileScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showAboutDialog = false }) { Text("Close") }
+                OnCoreButton(onClick = { showAboutDialog = false }) { Text("Close") }
             }
         )
     }
@@ -105,19 +111,20 @@ fun ProfileScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showPrivacyDialog = false }) { Text("Close") }
+                OnCoreButton(onClick = { showPrivacyDialog = false }) { Text("Close") }
             }
         )
     }
 
     // Settings list layout
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Settings") },
+            TheatricalTopBar(
+                title = "Settings",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TicketInkColor)
                     }
                 }
             )
@@ -131,10 +138,8 @@ fun ProfileScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Card(
-                onClick = { navController.navigate("user_profile") },
-                elevation = CardDefaults.cardElevation(2.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            OnCoreCard(
+                onClick = { navController.navigate("user_profile") }
             ) {
                 Row(
                     modifier = Modifier
@@ -164,7 +169,8 @@ fun ProfileScreen(
                         ) {
                             Text(
                                 text = profile.username.take(1).uppercase().ifBlank { "?" },
-                                fontSize = 24.sp, fontWeight = FontWeight.Bold
+                                fontSize = 24.sp, fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
                     }
@@ -199,7 +205,11 @@ fun ProfileScreen(
                     trailing = {
                         Switch(
                             checked = isDark,
-                            onCheckedChange = { themeViewModel.toggleTheme(it) }
+                            onCheckedChange = { themeViewModel.toggleTheme(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                            )
                         )
                     }
                 )
@@ -237,9 +247,12 @@ fun ProfileScreen(
                     navController.navigate("login") { popUpTo(0) }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.fillMaxWidth()
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
-                Text("Sign Out")
+                Text("Sign Out", fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(24.dp))
         }
@@ -251,19 +264,17 @@ fun ProfileScreen(
 @Composable
 fun SettingsSection(
     title: String,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(start = 8.dp)
         )
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            shape = MaterialTheme.shapes.medium
-        ) {
+        OnCoreCard {
             Column(modifier = Modifier.padding(vertical = 4.dp)) {
                 content()
             }
@@ -276,7 +287,13 @@ fun SettingsItem(
     icon: ImageVector,
     title: String,
     onClick: (() -> Unit)? = null,
-    trailing: (@Composable () -> Unit)? = { Icon(Icons.Default.ChevronRight, null, tint = Color.Gray) }
+    trailing: (@Composable () -> Unit)? = {
+        Icon(
+            Icons.Default.ChevronRight,
+            null,
+            tint = Color.Gray
+        )
+    },
 ) {
     ListItem(
         modifier = if (onClick != null) Modifier.clickable { onClick() } else Modifier,
@@ -285,10 +302,10 @@ fun SettingsItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.primary
             )
         },
-        headlineContent = { Text(title) },
+        headlineContent = { Text(title, fontWeight = FontWeight.Medium) },
         trailingContent = trailing
     )
 }

@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,10 +45,15 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.Coil
+import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.CalendarViewModel
+import com.example.cs501_fp.ui.components.OnCoreButton
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
@@ -61,7 +67,7 @@ import kotlin.math.abs
 fun AddEventScreen(
     viewModel: CalendarViewModel = viewModel(),
     onSave: (UserEvent) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -189,7 +195,11 @@ fun AddEventScreen(
             onDismissRequest = { showConflictDialog = false },
             title = { Text("Time Conflict Warning") },
             text = { Text("You already have an event scheduled around this time on $dateText. Add anyway?") },
-            confirmButton = { Button(onClick = { showConflictDialog = false; doSave() }) { Text("Yes, Add It") } },
+            confirmButton = {
+                OnCoreButton(onClick = { showConflictDialog = false; doSave() }) {
+                    Text("Yes, Add It")
+                }
+            },
             dismissButton = { TextButton(onClick = { showConflictDialog = false }) { Text("Cancel") } }
         )
     }
@@ -220,15 +230,22 @@ fun AddEventScreen(
 
     // --- Main UI Layout ---
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            TopAppBar(
-                title = { Text("Add Event") },
-                navigationIcon = { TextButton(onClick = onCancel) { Text("Cancel") } },
+            TheatricalTopBar(
+                title = "Add Event",
+                navigationIcon = {
+                    TextButton(onClick = onCancel) {
+                        Text("Cancel", color = TicketInkColor)
+                    }
+                },
                 actions = {
                     TextButton(
                         onClick = { attemptSave() },
                         enabled = title.isNotBlank() && venue.isNotBlank() && timeText.isNotBlank() && dateText.isNotBlank()
-                    ) { Text("Save") }
+                    ) {
+                        Text("Save", color = if (title.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
+                    }
                 }
             )
         }
@@ -258,7 +275,8 @@ fun AddEventScreen(
                         modifier = Modifier
                             .padding(top = 60.dp)
                             .fillMaxWidth()
-                            .heightIn(max = 200.dp)
+                            .heightIn(max = 200.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         LazyColumn {
                             items(searchResults) { event ->
@@ -315,22 +333,28 @@ fun AddEventScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
 
                 // Camera Button
-                OutlinedButton(onClick = {
-                    val permissionCheck = ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.CAMERA
-                    )
-                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                        cameraLauncher.launch(tempCameraUri)
-                    } else {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                }) {
+                OutlinedButton(
+                    onClick = {
+                        val permissionCheck = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.CAMERA
+                        )
+                        if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                            cameraLauncher.launch(tempCameraUri)
+                        } else {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
                     Icon(Icons.Default.PhotoCamera, null); Spacer(Modifier.width(8.dp)); Text("Camera")
                 }
 
                 // Gallery Button
-                OutlinedButton(onClick = { galleryLauncher.launch("image/*") }) {
+                OutlinedButton(
+                    onClick = { galleryLauncher.launch("image/*") },
+                    modifier = Modifier.weight(1f)
+                ) {
                     Icon(Icons.Default.AddPhotoAlternate, null); Spacer(Modifier.width(8.dp)); Text("Gallery")
                 }
             }
@@ -340,7 +364,7 @@ fun AddEventScreen(
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tempPhotoUris) { uri ->
                         AsyncImage(
-                            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                            model = ImageRequest.Builder(LocalContext.current)
                                 .data(uri)
                                 .size(200, 200)
                                 .crossfade(false)
