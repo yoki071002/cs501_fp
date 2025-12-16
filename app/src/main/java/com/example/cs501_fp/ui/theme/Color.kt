@@ -26,3 +26,9 @@ val Charcoal = Color(0xFF1E1E1E)
 val TextBlack = Color(0xFF212121)
 val TextGrey = Color(0xFF757575)
 val TextWhite = Color(0xFFEEEEEE)
+
+// --- Theatrical Theme Colors ---
+val TicketPaperColor = Color(0xFFFAF8EF)
+val TicketPaperColorBack = Color(0xFFF2EFE0)
+val TicketInkColor = Color(0xFF2B2B2B)
+val GoldLine = Color(0xFFFFD700).copy(alpha = 0.5f)
