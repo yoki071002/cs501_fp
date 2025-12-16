@@ -3,7 +3,11 @@
 
 package com.example.cs501_fp.ui.pages.auth
 
-import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -12,6 +16,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -21,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.cs501_fp.data.firebase.FirebaseAuthManager
 import com.example.cs501_fp.ui.components.OnCoreButton
+import kotlinx.coroutines.delay
 
 @Composable
 fun LoginScreen(navController: NavHostController) {
@@ -31,29 +38,45 @@ fun LoginScreen(navController: NavHostController) {
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    fun onAuthSuccess() {
-        isLoading = false
-        Toast.makeText(context, "Welcome back to the show!", Toast.LENGTH_SHORT).show()
-        navController.navigate("home") {
-            popUpTo("login") { inclusive = true }
+    var showWelcomeAnimation by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showWelcomeAnimation) {
+        if (showWelcomeAnimation) {
+            delay(1500)
+            navController.navigate("home") {
+                popUpTo("login") { inclusive = true }
+            }
         }
     }
 
-    fun onAuthError(msg: String?) {
-        isLoading = false
-        errorMessage = msg ?: "Authentication failed"
+    fun handleLogin() {
+        if (email.isNotBlank() && password.isNotBlank()) {
+            isLoading = true
+            errorMessage = null
+
+            authManager.login(email, password) { success, msg ->
+                isLoading = false
+                if (success) {
+                    showWelcomeAnimation = true
+                } else {
+                    errorMessage = msg ?: "Authentication failed"
+                }
+            }
+        } else {
+            errorMessage = "Please enter email and password"
+        }
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
         ) {
             // --- Brand Logo ---
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -109,18 +132,7 @@ fun LoginScreen(navController: NavHostController) {
             if (isLoading) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             } else {
-                OnCoreButton(
-                    onClick = {
-                        if (email.isNotBlank() && password.isNotBlank()) {
-                            isLoading = true
-                            authManager.login(email, password) { success, msg ->
-                                if (success) onAuthSuccess() else onAuthError(msg)
-                            }
-                        } else {
-                            errorMessage = "Please enter email and password"
-                        }
-                    }
-                ) {
+                OnCoreButton(onClick = { handleLogin() }) {
                     Text("Enter the Theatre")
                 }
 
@@ -131,6 +143,43 @@ fun LoginScreen(navController: NavHostController) {
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showWelcomeAnimation,
+            enter = fadeIn(animationSpec = tween(800)),
+            exit = fadeOut(animationSpec = tween(800))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.primary,
+                                Color(0xFF5A0000)
+                            ),
+                            radius = 1200f
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Welcome Back",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "The show is about to start...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
+                    )
+                    Spacer(Modifier.height(32.dp))
+                    CircularProgressIndicator(color = Color.White)
                 }
             }
         }
