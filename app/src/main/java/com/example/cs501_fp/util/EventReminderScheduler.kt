@@ -10,7 +10,7 @@ object EventReminderScheduler {
 
     fun schedule(context: Context, event: UserEvent) {
         val startMillis = EventTimeUtil.toStartMillis(event.dateText, event.timeText) ?: return
-        val reminderMillis = startMillis - - 2 * 60 * 60 * 1000
+        val reminderMillis = startMillis - 2 * 60 * 60 * 1000
         val delay = reminderMillis - System.currentTimeMillis()
 
         if (delay <= 0) return
