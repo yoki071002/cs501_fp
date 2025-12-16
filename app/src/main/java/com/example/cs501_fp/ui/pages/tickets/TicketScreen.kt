@@ -10,7 +10,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.runtime.collectAsState
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -21,9 +20,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -32,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Savings
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -43,18 +43,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
@@ -72,6 +78,11 @@ import com.example.cs501_fp.viewmodel.MonthlyStat
 import com.example.cs501_fp.ui.theme.Gold
 import com.example.cs501_fp.ui.theme.GoldDim
 import java.io.File
+import kotlin.random.Random
+
+val TicketPaperColor = Color(0xFFFAF8EF)
+val TicketInkColor = Color(0xFF2B2B2B)
+val TicketPaperColorBack = Color(0xFFF2EFE0)
 
 
 // --- Main Screen & Toggle ---
@@ -503,7 +514,100 @@ fun TicketListContent(viewModel: CalendarViewModel) {
 }
 
 
-// --- Flip & Ticket Details
+// --- Custom Ticket Shape ---
+class TicketShape(private val cornerRadius: Float, private val splitRatio: Float = 0.72f) : Shape {
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): androidx.compose.ui.graphics.Outline {
+        val path = androidx.compose.ui.graphics.Path().apply {
+            val notchRadius = 30f
+            val splitY = size.height * splitRatio
+
+            reset()
+            moveTo(0f, cornerRadius)
+            arcTo(
+                rect = Rect(0f, 0f, cornerRadius * 2, cornerRadius * 2),
+                startAngleDegrees = 180f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            lineTo(size.width - cornerRadius, 0f)
+            arcTo(
+                rect = Rect(size.width - cornerRadius * 2, 0f, size.width, cornerRadius * 2),
+                startAngleDegrees = 270f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            lineTo(size.width, splitY - notchRadius)
+            arcTo(
+                rect = Rect(
+                    left = size.width - notchRadius,
+                    top = splitY - notchRadius,
+                    right = size.width + notchRadius,
+                    bottom = splitY + notchRadius
+                ),
+                startAngleDegrees = 270f,
+                sweepAngleDegrees = -180f,
+                forceMoveTo = false
+            )
+            lineTo(size.width, size.height - cornerRadius)
+            arcTo(
+                rect = Rect(size.width - cornerRadius * 2, size.height - cornerRadius * 2, size.width, size.height),
+                startAngleDegrees = 0f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            lineTo(cornerRadius, size.height)
+            arcTo(
+                rect = Rect(0f, size.height - cornerRadius * 2, cornerRadius * 2, size.height),
+                startAngleDegrees = 90f,
+                sweepAngleDegrees = 90f,
+                forceMoveTo = false
+            )
+            lineTo(0f, splitY + notchRadius)
+            arcTo(
+                rect = Rect(
+                    left = -notchRadius,
+                    top = splitY - notchRadius,
+                    right = notchRadius,
+                    bottom = splitY + notchRadius
+                ),
+                startAngleDegrees = 90f,
+                sweepAngleDegrees = -180f,
+                forceMoveTo = false
+            )
+            lineTo(0f, cornerRadius)
+            close()
+        }
+        return androidx.compose.ui.graphics.Outline.Generic(path)
+    }
+}
+
+
+// --- Fake Barcode Composable ---
+@Composable
+fun BarcodeBar(modifier: Modifier = Modifier, color: Color = Color.Black) {
+    Canvas(modifier = modifier) {
+        val barWidth = 4.dp.toPx()
+        val spaceWidth = 2.dp.toPx()
+        var currentX = 0f
+
+        while (currentX < size.width) {
+            val isBar = Random.nextBoolean()
+            val width = if (Random.nextBoolean()) barWidth else barWidth / 2
+
+            if (isBar || currentX == 0f || currentX > size.width - 10) {
+                drawRect(
+                    color = color,
+                    topLeft = Offset(currentX, 0f),
+                    size = Size(width, size.height)
+                )
+            }
+            currentX += width + spaceWidth
+        }
+    }
+}
+
+
+// --- Flip & Ticket Details ---
 @Composable
 fun FlipTicketCard(event: UserEvent, viewModel: CalendarViewModel) {
     var rotated by remember { mutableStateOf(false) }
@@ -515,7 +619,7 @@ fun FlipTicketCard(event: UserEvent, viewModel: CalendarViewModel) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp)
+            .height(320.dp)
             .clickable { rotated = !rotated }
             .graphicsLayer {
                 rotationY = rotation
@@ -537,6 +641,7 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
     val context = LocalContext.current
     var showImageSourceDialog by remember { mutableStateOf(false) }
     var showGalleryDialog by remember { mutableStateOf(false) }
+    var viewingImage by remember { mutableStateOf<String?>(null) }
     val bgImage = event.officialImageUrl ?: event.userImageUris.firstOrNull()
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
@@ -578,17 +683,13 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     TextButton(onClick = {
                         showImageSourceDialog = false
-                        val permissionCheck = ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.CAMERA
-                        )
+                        val permissionCheck = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
                         if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
                             cameraLauncher.launch(null)
                         } else {
                             permissionLauncher.launch(Manifest.permission.CAMERA)
                         }
                     }) { Text("Camera") }
-
                     TextButton(onClick = { showImageSourceDialog = false; galleryLauncher.launch("image/*") }) { Text("Gallery") }
                     TextButton(onClick = { showImageSourceDialog = false }) { Text("Cancel") }
                 }
@@ -597,83 +698,185 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
     }
     if (showGalleryDialog && event.userImageUris.isNotEmpty()) {
         Dialog(onDismissRequest = { showGalleryDialog = false }) {
-            Card(modifier = Modifier
-                .fillMaxWidth()
-                .height(500.dp)) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(600.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
                 Column(Modifier.padding(16.dp)) {
                     Text("My Stubs & Memories", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(
-                            items = event.userImageUris,
-                            key = { path -> path }
-                        ) { path ->
-                            AsyncImage(
-                                model = File(path),
-                                contentDescription = null,
+                    Spacer(Modifier.height(12.dp))
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        itemsIndexed(
+                            items = event.userImageUris.reversed(),
+                            key = { index, path -> path + index }
+                        ) { _, path ->
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(200.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
-                            )
+                                    .height(220.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.LightGray)
+                                    .clickable { viewingImage = path }
+                            ) {
+                                AsyncImage(
+                                    model = File(path),
+                                    contentDescription = "User added stub",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop,
+                                )
+                            }
                         }
                     }
-                    Spacer(Modifier.weight(1f))
-                    OnCoreButton(onClick = { showGalleryDialog = false }, modifier = Modifier.align(Alignment.End)) { Text("Close") }
+                    Spacer(Modifier.height(12.dp))
+                    OnCoreButton(
+                        onClick = { showGalleryDialog = false },
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text("Close")
+                    }
                 }
             }
         }
     }
-    Card(
-        modifier = Modifier.fillMaxSize(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (bgImage != null) {
+
+    if (viewingImage != null) {
+        Dialog(onDismissRequest = { viewingImage = null }) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(bgImage)
-                        .crossfade(true)
-                        .size(800, 800)
-                        .build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    model = File(viewingImage!!),
+                    contentDescription = "Full-screen stub image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp)),
+                    contentScale = ContentScale.FillWidth
                 )
-                Box(modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.85f)
-                            )
-                        )
-                    ))
-            } else {
-                Box(Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primary))
+                IconButton(
+                    onClick = { viewingImage = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                ) {
+                    Icon(Icons.Default.Close, "Close", tint = Color.White)
+                }
+                IconButton(
+                    onClick = {
+                        val pathToDelete = viewingImage
+                        if (pathToDelete != null) {
+                            val updatedUris = event.userImageUris.filterNot { it == pathToDelete }
+                            viewModel.updateEvent(event.copy(userImageUris = updatedUris))
+                            try { File(pathToDelete).delete() } catch (e: Exception) {}
+                            viewingImage = null
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
+                        .background(MaterialTheme.colorScheme.errorContainer, CircleShape)
+                ) {
+                    Icon(Icons.Default.Delete, "Delete Photo", tint = MaterialTheme.colorScheme.onErrorContainer)
+                }
             }
-            Column(modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .padding(end = 48.dp)) {
-                Text(event.title, style = MaterialTheme.typography.headlineSmall, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("${event.dateText} @ ${event.timeText}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.9f))
-                Text(event.venue, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
-            }
-            Row(modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { showImageSourceDialog = true }) { Icon(Icons.Default.AddAPhoto, "Add Photo", tint = Color.White) }
-                if (event.userImageUris.isNotEmpty()) {
-                    IconButton(onClick = { showGalleryDialog = true }) {
-                        BadgedBox(badge = { Badge { Text(event.userImageUris.size.toString()) } }) { Icon(Icons.Default.PhotoLibrary, "Gallery", tint = Color.White) }
+        }
+    }
+
+    val ticketShape = TicketShape(cornerRadius = 16.dp.value, splitRatio = 0.72f)
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        shape = ticketShape,
+        shadowElevation = 8.dp,
+        color = TicketPaperColor
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.72f)
+            ) {
+                if (bgImage != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current).data(bgImage).crossfade(true).size(800, 800).build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.3f)))))
+                } else {
+                    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.primary)) {
+                        Icon(Icons.Default.Theaters, null, Modifier.size(64.dp).align(Alignment.Center), tint = Color.White.copy(alpha = 0.5f))
                     }
                 }
+                Row(modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)) {
+                    IconButton(
+                        onClick = { showImageSourceDialog = true },
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)).size(32.dp)
+                    ) { Icon(Icons.Default.AddAPhoto, "Add Photo", tint = Color.White, modifier = Modifier.size(16.dp)) }
+                    if (event.userImageUris.isNotEmpty()) {
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { showGalleryDialog = true },
+                            modifier = Modifier.background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(50)).size(32.dp)
+                        ) { Icon(Icons.Default.PhotoLibrary, "Gallery", tint = Color.White, modifier = Modifier.size(16.dp)) }
+                    }
+                }
+            }
+            Canvas(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 20.dp)) {
+                drawLine(
+                    color = TicketInkColor.copy(alpha = 0.3f),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.28f)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = event.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontFamily = FontFamily.Serif,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "${event.dateText} • ${event.timeText}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontFamily = FontFamily.Monospace,
+                            color = TicketInkColor.copy(alpha = 0.8f)
+                        )
+                        Text(
+                            text = event.venue,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TicketInkColor.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                BarcodeBar(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(30.dp)
+                        .padding(horizontal = 8.dp),
+                    color = TicketInkColor
+                )
             }
         }
     }
@@ -684,7 +887,6 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditRepoDialog by remember { mutableStateOf(false) }
-
     var currentPage by remember { mutableIntStateOf(0) }
 
     if (showDeleteDialog) {
@@ -709,11 +911,7 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
             initialIsPublic = event.isPublic,
             onDismiss = { showEditRepoDialog = false },
             onSave = { notes, review, isPublic ->
-                val updatedEvent = event.copy(
-                    notes = notes,
-                    publicReview = review,
-                    isPublic = isPublic
-                )
+                val updatedEvent = event.copy(notes = notes, publicReview = review, isPublic = isPublic)
                 viewModel.updateEvent(updatedEvent)
                 if (isPublic && !event.isPublic) {
                     Toast.makeText(context, "Posted to Community!", Toast.LENGTH_SHORT).show()
@@ -725,10 +923,13 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
         )
     }
 
-    Card(
+    val ticketShape = TicketShape(cornerRadius = 16.dp.value, splitRatio = 0.72f)
+
+    Surface(
         modifier = Modifier.fillMaxSize(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = ticketShape,
+        shadowElevation = 8.dp,
+        color = TicketPaperColorBack
     ) {
         Column(
             modifier = Modifier
@@ -743,22 +944,22 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                 Text(
                     text = if (currentPage == 0) "Ticket Details" else "Your Repo",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = TicketInkColor,
+                    fontFamily = FontFamily.Serif
                 )
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (currentPage == 1) {
                         IconButton(onClick = { showEditRepoDialog = true }, modifier = Modifier.size(28.dp)) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp), tint = TicketInkColor)
                         }
                         IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(28.dp)) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
                         }
                         Spacer(Modifier.width(8.dp))
-                        Box(Modifier.width(1.dp).height(16.dp).background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)))
+                        Box(Modifier.width(1.dp).height(16.dp).background(TicketInkColor.copy(alpha = 0.3f)))
                         Spacer(Modifier.width(8.dp))
                     }
-
                     IconButton(
                         onClick = { currentPage = 0 },
                         enabled = currentPage == 1,
@@ -767,12 +968,10 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                             contentDescription = "Prev",
-                            tint = if (currentPage == 1) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                            tint = if (currentPage == 1) TicketInkColor else TicketInkColor.copy(alpha = 0.2f)
                         )
                     }
-
                     Spacer(Modifier.width(4.dp))
-
                     IconButton(
                         onClick = { currentPage = 1 },
                         enabled = currentPage == 0,
@@ -781,26 +980,33 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                             contentDescription = "Next",
-                            tint = if (currentPage == 0) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                            tint = if (currentPage == 0) TicketInkColor else TicketInkColor.copy(alpha = 0.2f)
                         )
                     }
                 }
             }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = TicketInkColor.copy(alpha = 0.2f))
             Box(modifier = Modifier.weight(1f)) {
-
                 if (currentPage == 0) {
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(Modifier.fillMaxWidth()) {
-                            Box(Modifier.weight(1f)) { DetailItem("Date", event.dateText) }
-                            Box(Modifier.weight(1f)) { DetailItem("Time", event.timeText) }
+                            Box(Modifier.weight(1f)) { DetailItem("Date", event.dateText, true) }
+                            Box(Modifier.weight(1f)) { DetailItem("Time", event.timeText, true) }
                         }
-                        DetailItem("Venue", event.venue)
+                        DetailItem("Venue", event.venue, true)
+                        Spacer(Modifier.height(8.dp))
+                        Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
+                            drawLine(
+                                color = TicketInkColor.copy(alpha = 0.3f),
+                                start = Offset(0f, 0f),
+                                end = Offset(size.width, 0f),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
                         Row(Modifier.fillMaxWidth()) {
-                            Box(Modifier.weight(1f)) { DetailItem("Seat", event.seat.ifBlank { "GA" }) }
-                            Box(Modifier.weight(1f)) { DetailItem("Price", "$${"%.2f".format(event.price)}") }
+                            Box(Modifier.weight(1f)) { DetailItem("Seat", event.seat.ifBlank { "GA" }, true) }
+                            Box(Modifier.weight(1f)) { DetailItem("Price", "$${"%.2f".format(event.price)}", true) }
                         }
                     }
                 } else {
@@ -811,14 +1017,11 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (event.notes.isBlank() && event.publicReview.isBlank()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 Text(
                                     "Tap edit to write a review!",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = TicketInkColor.copy(alpha = 0.5f),
                                     fontStyle = FontStyle.Italic
                                 )
                             }
@@ -826,25 +1029,24 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                             if (event.publicReview.isNotBlank()) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f),
+                                    color = Color.Black.copy(alpha = 0.05f),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(Modifier.padding(12.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.Public, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                                            Icon(Icons.Default.Public, null, Modifier.size(14.dp), tint = TicketInkColor)
                                             Spacer(Modifier.width(6.dp))
-                                            Text("Public Review", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold)
+                                            Text("Public Review", style = MaterialTheme.typography.labelSmall, color = TicketInkColor, fontWeight = FontWeight.Bold)
                                         }
                                         Spacer(Modifier.height(4.dp))
-                                        Text(event.publicReview, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                        Text(event.publicReview, style = MaterialTheme.typography.bodyMedium, color = TicketInkColor)
                                     }
                                 }
                             }
-
                             if (event.notes.isNotBlank()) {
                                 Surface(
                                     shape = RoundedCornerShape(8.dp),
-                                    color = Gold.copy(alpha = 0.3f),
+                                    color = Gold.copy(alpha = 0.2f),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Column(Modifier.padding(12.dp)) {
@@ -854,11 +1056,10 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
                                             Text("Private Notes", style = MaterialTheme.typography.labelSmall, color = GoldDim, fontWeight = FontWeight.Bold)
                                         }
                                         Spacer(Modifier.height(4.dp))
-                                        Text(event.notes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(event.notes, style = MaterialTheme.typography.bodyMedium, color = TicketInkColor)
                                     }
                                 }
                             }
-
                             if (event.isPublic) {
                                 Spacer(Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -876,10 +1077,20 @@ fun TicketBack(event: UserEvent, viewModel: CalendarViewModel) {
 }
 
 @Composable
-fun DetailItem(label: String, value: String) {
+fun DetailItem(label: String, value: String, isTicket: Boolean = false) {
     Column(Modifier.padding(bottom = 8.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isTicket) TicketInkColor.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            fontFamily = if (isTicket) FontFamily.Monospace else FontFamily.Default,
+            color = if (isTicket) TicketInkColor else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
