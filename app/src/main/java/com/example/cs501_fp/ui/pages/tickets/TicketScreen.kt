@@ -584,15 +584,16 @@ class TicketShape(private val cornerRadius: Float, private val splitRatio: Float
 
 // --- Fake Barcode Composable ---
 @Composable
-fun BarcodeBar(modifier: Modifier = Modifier, color: Color = Color.Black) {
+fun BarcodeBar(modifier: Modifier = Modifier, color: Color = Color.Black, seed: Int) {
     Canvas(modifier = modifier) {
         val barWidth = 4.dp.toPx()
         val spaceWidth = 2.dp.toPx()
         var currentX = 0f
+        val random = Random(seed)
 
         while (currentX < size.width) {
-            val isBar = Random.nextBoolean()
-            val width = if (Random.nextBoolean()) barWidth else barWidth / 2
+            val isBar = random.nextBoolean()
+            val width = if (random.nextBoolean()) barWidth else barWidth / 2
 
             if (isBar || currentX == 0f || currentX > size.width - 10) {
                 drawRect(
@@ -608,6 +609,7 @@ fun BarcodeBar(modifier: Modifier = Modifier, color: Color = Color.Black) {
 
 
 // --- Flip & Ticket Details ---
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FlipTicketCard(event: UserEvent, viewModel: CalendarViewModel) {
     var rotated by remember { mutableStateOf(false) }
@@ -636,6 +638,7 @@ fun FlipTicketCard(event: UserEvent, viewModel: CalendarViewModel) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
     val context = LocalContext.current
@@ -643,6 +646,16 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
     var showGalleryDialog by remember { mutableStateOf(false) }
     var viewingImage by remember { mutableStateOf<String?>(null) }
     val bgImage = event.officialImageUrl ?: event.userImageUris.firstOrNull()
+
+    val displayDate = remember(event.dateText) {
+        try {
+            java.time.LocalDate.parse(event.dateText)
+                .format(java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy"))
+                .uppercase()
+        } catch (e: Exception) {
+            event.dateText
+        }
+    }
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
         if (bitmap != null) {
@@ -857,7 +870,7 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "${event.dateText} • ${event.timeText}",
+                            text = "$displayDate • ${event.timeText}",
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace,
                             color = TicketInkColor.copy(alpha = 0.8f)
@@ -875,7 +888,8 @@ fun TicketFront(event: UserEvent, viewModel: CalendarViewModel) {
                         .fillMaxWidth()
                         .height(30.dp)
                         .padding(horizontal = 8.dp),
-                    color = TicketInkColor
+                    color = TicketInkColor,
+                    seed = event.id.hashCode()
                 )
             }
         }
