@@ -43,6 +43,9 @@ import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.ui.components.StaggeredEntry
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.CommunityViewModel
 import com.example.cs501_fp.viewmodel.SortOption
 import java.text.SimpleDateFormat
@@ -77,26 +80,15 @@ fun CommunityScreen(
 
     // --- Main UI Structure ---
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Stage Door",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
+            TheatricalTopBar(
+                title = "Stage Door",
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Profile", tint = TicketInkColor, modifier = Modifier.size(28.dp))
                     }
-                },
-                windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 64.dp)
+                }
             )
         }
     ) { inner ->

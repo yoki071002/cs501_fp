@@ -40,6 +40,9 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.ProfileViewModel
 import com.example.cs501_fp.viewmodel.ThemeViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -115,26 +118,15 @@ fun ProfileScreen(
 
     // Settings list layout
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Settings",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                },
+            TheatricalTopBar(
+                title = "Settings",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = TicketInkColor)
                     }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 64.dp)
+                }
             )
         }
     ) { inner ->

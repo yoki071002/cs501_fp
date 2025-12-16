@@ -39,6 +39,9 @@ import coil.request.ImageRequest
 import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.ui.components.OnCoreCard
 import com.example.cs501_fp.ui.components.StaggeredEntry
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.HomeViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -65,26 +68,15 @@ fun HomeScreen(
     }
 
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "OnCore",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
+            TheatricalTopBar(
+                title = "OnCore",
                 actions = {
                     IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.AccountCircle, "Profile", modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.AccountCircle, "Profile", tint = TicketInkColor, modifier = Modifier.size(28.dp))
                     }
-                },
-                windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 64.dp)
+                }
             )
         }
     ) { inner ->

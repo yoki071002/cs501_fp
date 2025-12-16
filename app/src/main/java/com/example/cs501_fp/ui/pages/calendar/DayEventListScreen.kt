@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,29 +35,15 @@ fun DayEventListScreen(
     }
 
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Events on $dateText",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
+            TheatricalTopBar(
+                title = "Events on $dateText",
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TicketInkColor)
                     }
-                },
-                windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 64.dp)
+                }
             )
         }
     ) { inner ->

@@ -45,6 +45,9 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.ProfileViewModel
 
@@ -89,27 +92,19 @@ fun UserProfileScreen(
     }
 
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        profile.username.ifBlank { "Profile" },
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
+            TheatricalTopBar(
+                title = profile.username.ifBlank { "Profile" },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = TicketInkColor
+                        )
                     }
-                },
-                windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 64.dp)
+                }
             )
         }
     ) { inner ->

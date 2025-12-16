@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -50,6 +51,9 @@ import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.ui.components.OnCoreButton
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
@@ -63,7 +67,7 @@ import kotlin.math.abs
 fun AddEventScreen(
     viewModel: CalendarViewModel = viewModel(),
     onSave: (UserEvent) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -226,36 +230,23 @@ fun AddEventScreen(
 
     // --- Main UI Layout ---
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Add Event",
-                        style = MaterialTheme.typography.headlineMedium // Broadway font
-                    )
-                },
+            TheatricalTopBar(
+                title = "Add Event",
                 navigationIcon = {
-                    TextButton(
-                        onClick = onCancel,
-                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
-                    ) { Text("Cancel") }
+                    TextButton(onClick = onCancel) {
+                        Text("Cancel", color = TicketInkColor)
+                    }
                 },
                 actions = {
                     TextButton(
                         onClick = { attemptSave() },
-                        enabled = title.isNotBlank() && venue.isNotBlank() && timeText.isNotBlank() && dateText.isNotBlank(),
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
-                        )
-                    ) { Text("Save") }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                windowInsets = WindowInsets.statusBars,
-                modifier = Modifier.heightIn(max = 64.dp)
+                        enabled = title.isNotBlank() && venue.isNotBlank() && timeText.isNotBlank() && dateText.isNotBlank()
+                    ) {
+                        Text("Save", color = if (title.isNotBlank()) MaterialTheme.colorScheme.primary else Color.Gray)
+                    }
+                }
             )
         }
     ) { inner ->
@@ -268,7 +259,9 @@ fun AddEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Title Input (with auto complete search)
-            Box(modifier = Modifier.fillMaxWidth().zIndex(1f)) {
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .zIndex(1f)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it; viewModel.searchEvents(it) },

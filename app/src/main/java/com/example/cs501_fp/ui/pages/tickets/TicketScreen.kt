@@ -70,6 +70,7 @@ import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.ui.components.OnCoreButton
 import com.example.cs501_fp.ui.components.StaggeredEntry
+import com.example.cs501_fp.ui.components.TheatricalTopBar
 import com.example.cs501_fp.util.saveBitmapToInternalStorage
 import com.example.cs501_fp.util.saveUriToInternalStorage
 import com.example.cs501_fp.viewmodel.AnalyticsViewModel
@@ -98,37 +99,33 @@ fun TicketScreen(
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
     Scaffold(
+        containerColor = TicketPaperColor,
         topBar = {
-            Column {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            "Ticket Wallet",
-                            style = MaterialTheme.typography.headlineMedium
+            TheatricalTopBar(
+                title = "Ticket Wallet",
+                actions = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(
+                            Icons.Default.AccountCircle,
+                            contentDescription = "Profile",
+                            tint = TicketInkColor,
+                            modifier = Modifier.size(28.dp)
                         )
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                        actionIconContentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    actions = {
-                        IconButton(onClick = onProfileClick) {
-                            Icon(Icons.Default.AccountCircle, contentDescription = "Profile")
-                        }
-                    },
-                    windowInsets = WindowInsets.statusBars,
-                    modifier = Modifier.heightIn(max = 64.dp)
-                )
-                TicketToggle(
-                    selectedIndex = selectedTabIndex,
-                    onSelect = { selectedTabIndex = it }
-                )
-                HorizontalDivider()
-            }
+                    }
+                }
+            )
         }
     ) { inner ->
-        Box(modifier = Modifier.padding(inner)) {
+        Column(
+            modifier = Modifier
+                .padding(inner)
+                .fillMaxSize()
+        ) {
+            TicketToggle(
+                selectedIndex = selectedTabIndex,
+                onSelect = { selectedTabIndex = it }
+            )
+
             if (selectedTabIndex == 0) {
                 TicketListContent(calendarViewModel)
             } else {

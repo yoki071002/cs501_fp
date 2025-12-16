@@ -38,6 +38,9 @@ import coil.request.ImageRequest
 import com.example.cs501_fp.data.local.entity.UserEvent
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 import com.example.cs501_fp.viewmodel.ShowDetailViewModel
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import java.util.UUID
 import kotlin.math.abs
 
@@ -191,26 +194,15 @@ fun ShowDetailScreen(
     } else {
         val s = show!!
         Scaffold(
+            containerColor = TicketPaperColor,
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            "Show Detail",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
+                TheatricalTopBar(
+                    title = "Show Detail",
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TicketInkColor)
                         }
-                    },
-                    windowInsets = WindowInsets.statusBars,
-                    modifier = Modifier.heightIn(max = 64.dp)
+                    }
                 )
             },
             floatingActionButton = {

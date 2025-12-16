@@ -31,6 +31,9 @@ import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.cs501_fp.ui.components.OnCoreCard
+import com.example.cs501_fp.ui.components.TheatricalTopBar
+import com.example.cs501_fp.ui.theme.TicketInkColor
+import com.example.cs501_fp.ui.theme.TicketPaperColor
 import com.example.cs501_fp.viewmodel.CalendarViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,21 +49,15 @@ fun EventDetailScreen(
 
     if (event == null) {
         Scaffold(
+            containerColor = TicketPaperColor,
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text("Event Detail", style = MaterialTheme.typography.headlineMedium) },
+                TheatricalTopBar(
+                    title = "Event Detail",
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TicketInkColor)
                         }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    windowInsets = WindowInsets.statusBars,
-                    modifier = Modifier.heightIn(max = 60.dp)
+                    }
                 )
             }
         ) { inner ->
