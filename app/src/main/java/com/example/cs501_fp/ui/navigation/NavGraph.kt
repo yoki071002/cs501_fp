@@ -173,7 +173,14 @@ fun NavGraph(
             composable("profile") {
                 ProfileScreen(
                     navController = navController,
-                    themeViewModel = themeViewModel
+                    themeViewModel = themeViewModel,
+                    onSignOut = {
+                        homeVM.stopPreview()
+                        FirebaseAuth.getInstance().signOut()
+                        navController.navigate("login") {
+                            popUpTo(0)
+                        }
+                    }
                 )
             }
 

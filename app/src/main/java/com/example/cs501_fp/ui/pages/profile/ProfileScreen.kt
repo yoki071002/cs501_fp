@@ -53,6 +53,7 @@ fun ProfileScreen(
     navController: NavHostController,
     themeViewModel: ThemeViewModel,
     viewModel: ProfileViewModel = viewModel(),
+    onSignOut: () -> Unit
 ) {
     val context = LocalContext.current
     val profile by viewModel.profile.collectAsState()
@@ -243,8 +244,7 @@ fun ProfileScreen(
             Button(
                 onClick = {
                     viewModel.clearLocalData()
-                    FirebaseAuth.getInstance().signOut()
-                    navController.navigate("login") { popUpTo(0) }
+                    onSignOut()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(12.dp),
