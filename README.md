@@ -11,6 +11,12 @@
 
 ---
 
+## Live Demo
+
+https://github.com/user-attachments/assets/6427b675-7e79-408f-90ae-f3da33808c63
+
+---
+
 ## Feature List & Status
 
 | Feature Category | Feature Name | Status | Description |
@@ -76,4 +82,5 @@ The project follows the MVVM (Model-View-ViewModel) architecture pattern, utiliz
 ---
 
 ## AI Reflection
+
 We utilized AI assistants (LLMs) primarily for debugging code, resolving syntax errors, and troubleshooting integration issues throughout the development process.
